@@ -1,0 +1,42 @@
+{
+  "dataset_name": "full",
+  "n_scenarios_requested": 1000,
+  "random_seed": 42,
+  "config_hash": "85d60fd94d834f2a",
+  "location": "jinan",
+  "weather_year": 2023,
+  "n_max": 30,
+  "ranges": {
+    "pv_capacity_kwp": [
+      10,
+      40
+    ],
+    "wind_capacity_kw": [
+      5,
+      25
+    ],
+    "annual_load_kwh": [
+      10000,
+      50000
+    ],
+    "peak_load_kw": [
+      5,
+      20
+    ],
+    "reliability_target_load_served": [
+      0.99,
+      0.999
+    ],
+    "round_trip_efficiency": [
+      0.88,
+      0.97
+    ],
+    "usable_soc_window_fraction": [
+      0.7,
+      0.9
+    ]
+  },
+  "last_run_new_scenarios": 500,
+  "last_run_seconds": 131.6256532299999,
+  "last_run_parallel": true
+}
