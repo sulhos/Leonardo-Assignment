@@ -25,7 +25,7 @@ load:
 
 pv:
   capacity_kwp: 20.0
-  tilt_deg: null        # TODO(Stage 2): higher-latitude tilt likely differs from Jinan
+  tilt_deg: 59.61       # latitude-tilt heuristic (site latitude) — see jinan.yaml comment
   azimuth_deg: 180.0
   system_losses_fraction: 0.14
   inverter_efficiency: 0.96
@@ -37,7 +37,9 @@ wind:
   cut_in_mps: 2.5
   rated_mps: 11.0
   cut_out_mps: 25.0
-  weather_reference_height_m: null  # TODO(Stage 2): fill in after API validation
+  # Confirmed via NASA POWER API validation (addendum §1.4, see data/README.md):
+  # the hourly endpoint's WS10M parameter is used as the model input, at 10 m.
+  weather_reference_height_m: 10
 
 battery:
   chemistry: LFP

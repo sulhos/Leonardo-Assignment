@@ -16,24 +16,65 @@ permanent source of truth — regenerate from `src/` + `config/`.
 
 ## NASA POWER API validation (refinement addendum §1.4)
 
-Before the full weather pipeline is built in Stage 2, a standalone validation check
-must be run against the NASA POWER hourly API for a short date range around the Jinan
-coordinates (36.65, 117.12) to confirm:
+**Status: performed.** Run via a standalone script (not part of `src/`) against
+`https://power.larc.nasa.gov/api/temporal/hourly/point`, `community=RE`, for both
+Jinan (36.65, 117.12) and Västerås (16.54, 59.61 — note lon/lat order) over a short
+sample date range (2023-06-15 to 2023-06-17). Findings:
 
-1. **Time standard** of the returned timestamps (NASA POWER hourly data is documented
-   as UTC; this must be confirmed against actual response metadata, not assumed).
-2. **Units** of the solar, wind, and temperature fields actually returned — checked
-   against the current NASA POWER API documentation and sanity-checked by magnitude
-   (e.g. GHI in W/m² should not silently be MJ/m²/hr or similar), not assumed from
-   memory.
-3. **Wind reference height** — whether the hourly wind-speed parameter used (e.g.
-   `WS10M` vs a 50 m equivalent) is at 10 m or 50 m for both Jinan and Västerås, since
-   this feeds directly into the power-law height adjustment in `src/physics/wind_model.py`.
+### 1. Time standard — do NOT assume UTC
 
-**Status: not yet performed.** This is the first task of Stage 2, before any weather
-pipeline code is written against assumed units/timestamps. Findings will be recorded
-in this section (time standard, field units, wind reference height, any coverage gaps
-or surprises for Jinan and/or Västerås) before Stage 2 proceeds further.
+By default the hourly endpoint returns **`time_standard: "LST"`** (Local Solar Time —
+mean solar time derived from longitude, *not* the site's civil timezone, and with no
+DST adjustment). This is confirmed directly in the JSON response's `header.time_standard`
+field, not assumed. Using the default LST response and naively labelling it as the
+site's civil local time would introduce an error of tens of minutes to over an hour
+depending on longitude, and would not shift for DST.
+
+**Decision:** always request the API with the query parameter **`time-standard=UTC`**
+(confirmed working — `header.time_standard` then reports `"UTC"` for both Jinan and
+Västerås). The pipeline converts those UTC timestamps to each site's local civil time
+using its IANA timezone (`Asia/Shanghai` / `Europe/Stockholm`) via pandas
+`tz_localize("UTC").tz_convert(timezone)`, which correctly handles the Västerås DST
+transition. `src/data/weather.py` must always pass `time-standard=UTC` explicitly.
+
+### 2. Field units — GHI is NOT plain W/m²
+
+Per the response's own `parameters` metadata block (`data["parameters"][name]["units"]`):
+
+| Parameter | Reported unit | Notes |
+|---|---|---|
+| `ALLSKY_SFC_SW_DWN` | **`Wh/m^2`** | Hourly energy density, not instantaneous W/m². Numerically equal to the average W/m² over that hour (since the accumulation window is exactly 1 h), so it can be used directly wherever an hourly-average irradiance in W/m² is expected — but it must be documented as Wh/m² accumulated-over-the-hour, not silently treated as an instantaneous reading. |
+| `T2M` | `C` | Temperature at 2 m, degrees Celsius — as expected. |
+| `WS10M` | `m/s` | Wind speed at 10 m — as expected. |
+| `WS50M` | `m/s` | Wind speed at 50 m — as expected. |
+| `WD10M` | `Degrees` | Wind direction at 10 m. |
+
+Magnitude sanity check (Jinan, mid-June sample): GHI 0–912.5 Wh/m² (plausible for
+clear-sky summer midday), WS10M 1.25–5.26 m/s, WS50M 1.39–8.21 m/s — all physically
+reasonable, no unit-mismatch red flags (e.g. not MJ/m², not km/h).
+
+### 3. Wind reference height
+
+Both **`WS10M`** (10 m) and **`WS50M`** (50 m) are available on the hourly endpoint for
+both Jinan and Västerås. **Decision:** use `WS10M` (10 m reference) as the model input
+to `src/physics/wind_model.py`'s power-law height adjustment, since 10 m is closer to
+the configured turbine hub height (15 m) than 50 m is — extrapolating a shorter
+vertical distance is more defensible than extrapolating from 50 m down to 15 m.
+`config/*.yaml` → `wind.weather_reference_height_m` is set to `10`.
+
+### 4. Coverage / surprises
+
+No coverage gaps observed in the sample range for either location. The API's `geometry`
+block echoes back a modelled surface elevation for the queried point (Jinan ≈ 183 m,
+Västerås ≈ 47 m) — informational only, not currently used by the model.
+
+### 5. Elevation note (informational)
+
+`config/jinan.yaml` and `config/vasteras.yaml` had placeholder `elevation_m` values
+(51 m and 20 m respectively) that do not match the API's modelled elevation (183 m and
+47 m). This has no effect on the current PV/wind equations (elevation is not yet
+consumed anywhere), but is flagged here so it isn't silently forgotten if elevation
+becomes model-relevant later (e.g. air-density-dependent wind power).
 
 ## Manual CSV fallback
 
