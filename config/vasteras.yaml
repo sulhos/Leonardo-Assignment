@@ -1,0 +1,72 @@
+# Secondary site configuration: Vasteras, Sweden.
+# NOT the project baseline. Kept available for geographic-transfer / sensitivity
+# testing only (PROJECT_BRIEF.md §4, Experiment C in §16 — optional).
+#
+# Vasteras observes DST (Europe/Stockholm); the weather pipeline must handle the
+# DST transition explicitly (PROJECT_BRIEF.md §7) — this is flagged here as a
+# known complication to validate in Stage 2 / addendum §1.4, not yet resolved.
+
+site:
+  name: vasteras
+  latitude: 59.61
+  longitude: 16.54
+  timezone: Europe/Stockholm
+  elevation_m: 20  # approximate; verify against NASA POWER metadata in Stage 2
+
+simulation:
+  year: 2023
+  expected_hourly_records: 8760  # non-leap local year; DST handling must be verified
+
+load:
+  target_annual_kwh: 30000
+  max_hourly_kw: 15
+  profile_family: residential_baseline
+  random_seed: 42
+
+pv:
+  capacity_kwp: 20.0
+  tilt_deg: null        # TODO(Stage 2): higher-latitude tilt likely differs from Jinan
+  azimuth_deg: 180.0
+  system_losses_fraction: 0.14
+  inverter_efficiency: 0.96
+
+wind:
+  rated_power_kw: 10.0
+  hub_height_m: 15.0
+  wind_shear_exponent: 0.14
+  cut_in_mps: 2.5
+  rated_mps: 11.0
+  cut_out_mps: 25.0
+  weather_reference_height_m: null  # TODO(Stage 2): fill in after API validation
+
+battery:
+  chemistry: LFP
+  module_capacity_kwh: 15.36
+  module_rated_power_kw: 12.8
+  round_trip_efficiency: 0.95
+  min_soc_fraction: 0.10
+  max_soc_fraction: 0.95
+  initial_soc_fraction: 0.50
+  economic_lifetime_years: 10
+  project_lifetime_years: 20
+  installed_cost_eur_per_kwh: 550
+  cost_sensitivity_eur_per_kwh: [400, 550, 700]
+  candidate_module_counts:
+    min: 0
+    max: 30
+  temperature_derating:
+    enabled: false
+    charge_derating_threshold_c: null
+    discharge_derating_threshold_c: null
+    thermal_management_load_kw: null
+
+reliability:
+  primary_lpsp_target: 0.01
+  sensitivity_targets_load_served: [0.990, 0.995, 0.999]
+
+economics:
+  real_discount_rate: 0.05
+
+paths:
+  raw_weather_dir: data/raw
+  processed_weather_dir: data/processed

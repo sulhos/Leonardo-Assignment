@@ -1,0 +1,72 @@
+# Baseline site configuration: Jinan, China.
+# All values here are the project's baseline defaults (PROJECT_BRIEF.md §4-§6).
+# This file is consumed by src/config.py; no module should hard-code these values.
+
+site:
+  name: jinan
+  latitude: 36.65
+  longitude: 117.12
+  timezone: Asia/Shanghai
+  elevation_m: 51  # approximate; verify against NASA POWER metadata in Stage 2
+
+simulation:
+  year: 2023
+  expected_hourly_records: 8760  # non-leap local year
+
+load:
+  target_annual_kwh: 30000
+  max_hourly_kw: 15
+  profile_family: residential_baseline
+  random_seed: 42
+
+pv:
+  capacity_kwp: 20.0
+  # tilt/azimuth are modelling assumptions, not manufacturer specs — set explicitly
+  # in Stage 2 when the pvlib model is implemented, and documented as such.
+  tilt_deg: null        # TODO(Stage 2): set and document (e.g. latitude-tilt heuristic)
+  azimuth_deg: 180.0    # equator-facing default for northern hemisphere
+  system_losses_fraction: 0.14  # placeholder PVWatts-style loss assumption; revisit in Stage 2
+  inverter_efficiency: 0.96
+
+wind:
+  rated_power_kw: 10.0
+  hub_height_m: 15.0
+  wind_shear_exponent: 0.14  # generic open-terrain default; document limitation in report
+  cut_in_mps: 2.5
+  rated_mps: 11.0
+  cut_out_mps: 25.0
+  # NASA POWER reference height for the wind-speed parameter used must be confirmed
+  # and recorded in data/README.md before this value is trusted (addendum §1.4).
+  weather_reference_height_m: null  # TODO(Stage 2): fill in after API validation
+
+battery:
+  chemistry: LFP
+  module_capacity_kwh: 15.36       # manufacturer spec (BYD Battery-Box Premium LVL-style)
+  module_rated_power_kw: 12.8      # manufacturer spec
+  round_trip_efficiency: 0.95      # manufacturer spec (approximate)
+  min_soc_fraction: 0.10           # modelling assumption
+  max_soc_fraction: 0.95           # modelling assumption
+  initial_soc_fraction: 0.50       # modelling assumption
+  economic_lifetime_years: 10      # economic assumption
+  project_lifetime_years: 20       # economic assumption
+  installed_cost_eur_per_kwh: 550  # economic assumption — NOT an official BYD retail price
+  cost_sensitivity_eur_per_kwh: [400, 550, 700]
+  candidate_module_counts:
+    min: 0
+    max: 30
+  temperature_derating:
+    enabled: false  # optional feature; controlled/enclosure temperature assumed initially
+    charge_derating_threshold_c: null
+    discharge_derating_threshold_c: null
+    thermal_management_load_kw: null
+
+reliability:
+  primary_lpsp_target: 0.01  # >= 99% load served
+  sensitivity_targets_load_served: [0.990, 0.995, 0.999]
+
+economics:
+  real_discount_rate: 0.05  # configurable; economic assumption
+
+paths:
+  raw_weather_dir: data/raw
+  processed_weather_dir: data/processed

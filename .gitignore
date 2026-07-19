@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Environment / secrets
+.env
+
+# Generated data (keep directory structure + README via .gitkeep)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/scenarios/*
+!data/scenarios/.gitkeep
+data/ml_dataset/*
+!data/ml_dataset/.gitkeep
+
+# Trained models (keep directory structure via .gitkeep)
+models/neural_network/*
+!models/neural_network/.gitkeep
+models/baselines/*
+!models/baselines/.gitkeep
+models/preprocessing/*
+!models/preprocessing/.gitkeep
+
+# Generated outputs (keep directory structure via .gitkeep)
+outputs/mechanistic/*
+!outputs/mechanistic/.gitkeep
+outputs/scenarios/*
+!outputs/scenarios/.gitkeep
+outputs/ai/*
+!outputs/ai/.gitkeep
+outputs/comparisons/*
+!outputs/comparisons/.gitkeep
+outputs/figures/*
+!outputs/figures/.gitkeep
+outputs/tables/*
+!outputs/tables/.gitkeep
+outputs/logs/*
+!outputs/logs/.gitkeep

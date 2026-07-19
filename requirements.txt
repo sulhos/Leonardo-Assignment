@@ -1,0 +1,33 @@
+# Core scientific stack
+numpy>=1.26
+pandas>=2.2
+scipy>=1.12
+
+# Weather / solar / wind modelling
+requests>=2.31
+pvlib>=0.10
+
+# Config, timezones, paths
+pyyaml>=6.0
+tzdata>=2024.1
+
+# Machine learning baselines
+scikit-learn>=1.4
+
+# Neural network (Keras/TensorFlow backend — see src/ai/neural_network.py docstring)
+tensorflow>=2.16
+
+# Visualization
+matplotlib>=3.8
+seaborn>=0.13
+
+# Notebooks
+jupyter>=1.0
+ipykernel>=6.29
+
+# Testing
+pytest>=8.0
+pytest-cov>=5.0
+
+# Code quality
+mypy>=1.9

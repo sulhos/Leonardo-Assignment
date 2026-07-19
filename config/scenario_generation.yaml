@@ -1,0 +1,45 @@
+# Machine-learning scenario dataset generation configuration.
+# See PROJECT_BRIEF.md §14 (ranges) and the refinement addendum §1.1 (staged sizes:
+# pilot 100 -> stretch 500 -> 1000 -> full 5000, re-validating at each step).
+
+dataset_sizes:
+  pilot: 100          # Stage 4 (core scope) — build and validate this first
+  development: 1000   # stretch
+  full: 5000          # stretch — only after incremental re-validation
+
+active_size: pilot  # which of the above this run targets; change explicitly, don't guess
+
+random_seed: 42
+
+# Locations included in scenario generation. Jinan only for the core-scope pilot;
+# Vasteras is added only for the optional geographic-transfer stretch goal.
+locations: [jinan]
+
+# Weather years available for scenario generation. A single year is acceptable for
+# the pilot per addendum §1.1; Experiment B (unseen-weather holdout) requires more
+# than one and is a stretch goal.
+weather_years: [2023]
+
+ranges:
+  pv_capacity_kwp: [10, 40]
+  wind_capacity_kw: [5, 25]
+  annual_load_kwh: [10000, 50000]
+  peak_load_kw: [5, 20]
+  reliability_target_load_served: [0.990, 0.999]
+  round_trip_efficiency: [0.88, 0.97]
+  usable_soc_window_fraction: [0.70, 0.90]
+
+# Physical-consistency checks applied before accepting a sampled scenario
+# (PROJECT_BRIEF.md §14) — implemented in src/scenarios/sampling.py, not here.
+consistency_checks:
+  enforce_load_peak_compatibility: true
+  enforce_renewable_vs_demand_plausibility: true
+
+candidate_module_counts:
+  min: 0
+  max: 30
+
+execution:
+  parallel: false  # enable once reproducibility under parallel execution is verified
+  resumable_cache: true
+  cache_dir: data/scenarios/.cache
