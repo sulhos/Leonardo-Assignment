@@ -1,8 +1,8 @@
 {
   "dataset_name": "full",
-  "n_scenarios_requested": 1000,
+  "n_scenarios_requested": 5000,
   "random_seed": 42,
-  "config_hash": "85d60fd94d834f2a",
+  "config_hash": "6303e489230bebb0",
   "location": "jinan",
   "weather_year": 2023,
   "n_max": 30,
@@ -36,7 +36,7 @@
       0.9
     ]
   },
-  "last_run_new_scenarios": 500,
-  "last_run_seconds": 131.6256532299999,
+  "last_run_new_scenarios": 4000,
+  "last_run_seconds": 1046.0208113420001,
   "last_run_parallel": true
 }
