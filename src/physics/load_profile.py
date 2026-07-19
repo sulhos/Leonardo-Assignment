@@ -125,7 +125,12 @@ def generate_load_profile(
     load_kw = relative_demand * scale
 
     achieved_peak = load_kw.max()
-    if achieved_peak > peak_load_kw:
+    # Relative tolerance guards against float64 rounding noise when the same
+    # (seed, annual_consumption_kwh) is regenerated more than once and compared
+    # against a peak_load_kw sourced from a prior run's own achieved-peak
+    # feature (see src/ai/physical_verification.py's docstring) -- this is a
+    # numerical-hygiene safety net, not a loosening of the actual constraint.
+    if achieved_peak > peak_load_kw * (1 + 1e-9):
         raise ValueError(
             f"Generated peak load {achieved_peak:.2f} kW exceeds the requested "
             f"peak_load_kw={peak_load_kw:.2f} for annual_consumption_kwh="

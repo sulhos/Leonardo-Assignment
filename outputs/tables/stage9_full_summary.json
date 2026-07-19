@@ -1,0 +1,200 @@
+{
+  "n_total_scenarios": 5000,
+  "n_feasible": 2858,
+  "feasible_rate": 0.5716,
+  "split_sizes": {
+    "train": 2000,
+    "val": 428,
+    "test": 430
+  },
+  "n_negative_predictions_clipped": {
+    "naive": 0,
+    "ridge": 3,
+    "random_forest": 0,
+    "neural_network": 0
+  },
+  "feature_engineering_seconds": 142.389075021,
+  "train_times": {
+    "naive": 0.001084644999991724,
+    "ridge": 0.02017985800000588,
+    "random_forest": 17.02761667799996,
+    "neural_network": 32.614164222
+  },
+  "n_epochs_trained": 158,
+  "accuracy_by_model": {
+    "naive": {
+      "mae": 89.55237209302327,
+      "rmse": 121.10117121934732,
+      "r2": -0.10366106075610682,
+      "median_absolute_error": 61.44,
+      "mape": 0.7238387990698743,
+      "max_absolute_error": 337.92,
+      "mean_signed_error_bias": -37.11404651162791,
+      "pct_within_5pct": 0.05116279069767442,
+      "pct_within_10pct": 0.05116279069767442,
+      "pct_within_20pct": 0.23255813953488372,
+      "n_samples": 430
+    },
+    "ridge": {
+      "mae": 28.21081207853288,
+      "rmse": 37.50482967373258,
+      "r2": 0.8941444999054878,
+      "median_absolute_error": 21.571626460190657,
+      "mape": 0.23258774073697241,
+      "max_absolute_error": 140.5479619951564,
+      "mean_signed_error_bias": -0.860903582143195,
+      "pct_within_5pct": 0.17209302325581396,
+      "pct_within_10pct": 0.3186046511627907,
+      "pct_within_20pct": 0.5627906976744186,
+      "n_samples": 430
+    },
+    "random_forest": {
+      "mae": 14.382675348837205,
+      "rmse": 22.542959126415848,
+      "r2": 0.9617562139011819,
+      "median_absolute_error": 7.987199999999966,
+      "mape": 0.08995603570791695,
+      "max_absolute_error": 127.33439999999996,
+      "mean_signed_error_bias": 1.1930790697674214,
+      "pct_within_5pct": 0.4,
+      "pct_within_10pct": 0.6674418604651163,
+      "pct_within_20pct": 0.9,
+      "n_samples": 430
+    },
+    "neural_network": {
+      "mae": 5.776778777898744,
+      "rmse": 7.763873761309449,
+      "r2": 0.9954637606270587,
+      "median_absolute_error": 4.586108856201172,
+      "mape": 0.04811895813051549,
+      "max_absolute_error": 33.05194091796875,
+      "mean_signed_error_bias": 1.0311361724498684,
+      "pct_within_5pct": 0.6627906976744186,
+      "pct_within_10pct": 0.8767441860465116,
+      "pct_within_20pct": 0.9883720930232558,
+      "n_samples": 430
+    }
+  },
+  "operational_by_model": {
+    "naive": {
+      "underprediction_rate": 0.46511627906976744,
+      "overprediction_rate": 0.48372093023255813,
+      "exact_match_rate": 0.05116279069767442,
+      "mean_underprediction_kwh": 136.16639999999998,
+      "max_underprediction_kwh": 337.92,
+      "mean_overprediction_kwh": 54.20307692307692,
+      "max_overprediction_kwh": 92.16
+    },
+    "ridge": {
+      "underprediction_rate": 0.4906976744186046,
+      "overprediction_rate": 0.5093023255813953,
+      "exact_match_rate": 0.0,
+      "mean_underprediction_kwh": 29.622838232442444,
+      "max_underprediction_kwh": 140.5479619951564,
+      "mean_overprediction_kwh": 26.85036678869307,
+      "max_overprediction_kwh": 87.10673326492366
+    },
+    "random_forest": {
+      "underprediction_rate": 0.4558139534883721,
+      "overprediction_rate": 0.5441860465116279,
+      "exact_match_rate": 0.0,
+      "mean_underprediction_kwh": 14.46817959183675,
+      "max_underprediction_kwh": 82.48320000000001,
+      "mean_overprediction_kwh": 14.311056410256388,
+      "max_overprediction_kwh": 127.33439999999996
+    },
+    "neural_network": {
+      "underprediction_rate": 0.4418604651162791,
+      "overprediction_rate": 0.5581395348837209,
+      "exact_match_rate": 0.0,
+      "mean_underprediction_kwh": 5.370069264060568,
+      "max_underprediction_kwh": 25.959042968749998,
+      "mean_overprediction_kwh": 6.098757143020632,
+      "max_overprediction_kwh": 33.05194091796875
+    }
+  },
+  "summary_by_model": {
+    "naive": {
+      "n_scenarios": 430,
+      "pct_satisfying_reliability": 0.5348837209302325,
+      "pct_undersized": 0.46511627906976744,
+      "pct_oversized": 0.48372093023255813,
+      "mean_excess_capacity_kwh": -37.1140465116279,
+      "max_underprediction_kwh": 337.91999999999996,
+      "additional_cost_from_oversizing_eur": 803036.1125922023,
+      "n_reliability_violations": 200,
+      "n_reliability_violations_from_undersizing": 200,
+      "mean_curtailed_difference_kwh": 158.7921217607335,
+      "mean_cost_difference_eur": -2643.5413503051086
+    },
+    "ridge": {
+      "n_scenarios": 430,
+      "pct_satisfying_reliability": 0.7,
+      "pct_undersized": 0.3,
+      "pct_oversized": 0.5093023255813953,
+      "mean_excess_capacity_kwh": 6.751255813953488,
+      "max_underprediction_kwh": 138.23999999999995,
+      "additional_cost_from_oversizing_eur": 545933.2700047805,
+      "n_reliability_violations": 129,
+      "n_reliability_violations_from_undersizing": 129,
+      "mean_curtailed_difference_kwh": 37.46466306578094,
+      "mean_cost_difference_eur": 480.8751830680129
+    },
+    "random_forest": {
+      "n_scenarios": 430,
+      "pct_satisfying_reliability": 0.858139534883721,
+      "pct_undersized": 0.14186046511627906,
+      "pct_oversized": 0.5441860465116279,
+      "mean_excess_capacity_kwh": 8.715906976744186,
+      "max_underprediction_kwh": 76.80000000000001,
+      "additional_cost_from_oversizing_eur": 397141.8376988685,
+      "n_reliability_violations": 61,
+      "n_reliability_violations_from_undersizing": 61,
+      "mean_curtailed_difference_kwh": -15.604152354766194,
+      "mean_cost_difference_eur": 620.8124056539425
+    },
+    "neural_network": {
+      "n_scenarios": 430,
+      "pct_satisfying_reliability": 0.9883720930232558,
+      "pct_undersized": 0.011627906976744186,
+      "pct_oversized": 0.5581395348837209,
+      "mean_excess_capacity_kwh": 9.001674418604651,
+      "max_underprediction_kwh": 15.360000000000014,
+      "additional_cost_from_oversizing_eur": 281172.04487220163,
+      "n_reliability_violations": 5,
+      "n_reliability_violations_from_undersizing": 5,
+      "mean_curtailed_difference_kwh": -15.526843277611581,
+      "mean_cost_difference_eur": 641.1669107573505
+    }
+  },
+  "inference_seconds": {
+    "naive": 2.20195348912628e-07,
+    "ridge": 2.3124790697354826e-06,
+    "random_forest": 3.102746046526463e-05,
+    "neural_network": 0.00016153382325577442
+  },
+  "verification_seconds": 173.76429116399993,
+  "total_pipeline_seconds": 366.60208196499997,
+  "dataset_generation_seconds": 4991.601517693002,
+  "mechanistic_time_per_scenario": 0.9983203035386005,
+  "break_even": [
+    {
+      "model": "ridge",
+      "train_time_s": 0.02017985800000588,
+      "inference_time_s": 2.3124790697354826e-06,
+      "n_break_even_scenarios": 5000.031795734058
+    },
+    {
+      "model": "random_forest",
+      "train_time_s": 17.02761667799996,
+      "inference_time_s": 3.102746046526463e-05,
+      "n_break_even_scenarios": 5017.212199301419
+    },
+    {
+      "model": "neural_network",
+      "train_time_s": 32.614164222,
+      "inference_time_s": 0.00016153382325577442,
+      "n_break_even_scenarios": 5033.483484143319
+    }
+  ]
+}

@@ -94,6 +94,19 @@ def verify_predictions(
             `round_trip_efficiency`, `usable_soc_window_fraction`, and the
             raw generation inputs) -- i.e. feasible scenarios only, since
             infeasible ones have no reference to compare against.
+            **`annual_load_kwh` and `peak_load_kw` here must be the ORIGINAL
+            scenario inputs (e.g. from `data/scenarios/*.csv`), never
+            `src.ai.features`'s engineered/achieved versions of those same
+            column names.** `compute_load_features` legitimately returns the
+            *achieved* peak/annual load of the regenerated series as an ML
+            feature, which can differ from the original request by a tiny
+            floating-point rescaling -- enough that feeding it back into
+            `generate_load_profile` here can occasionally trip that
+            function's own internal consistency check. If joining scenario
+            rows against a `features.py` output, explicitly overwrite these
+            two columns from the raw scenario table before calling this
+            function (see `notebooks/05_model_comparison.ipynb`'s Stage 8/9
+            section for the pattern).
         predicted_capacities_kwh: Model predictions, aligned by `scenarios.index`.
         weather: Shared local-year hourly weather for these scenarios' site/year.
         site_config: Fixed site configuration (siting assumptions, battery
