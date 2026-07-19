@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.ai.neural_network import build_model, predict, set_global_seed, train_model
+from src.ai.neural_network import build_model, load_trained_model, predict, set_global_seed, train_model
 
 SMALL_CONFIG = {
     "architecture": {
@@ -71,9 +71,27 @@ def test_train_model_creates_checkpoint_and_history(tmp_path) -> None:
     model, history = train_model(model, X_train, y_train, X_val, y_val, SMALL_CONFIG, tmp_path)
 
     assert (tmp_path / "best_model.keras").is_file()
+    assert (tmp_path / "best_model.weights.h5").is_file()
     assert "loss" in history.history
     assert "val_loss" in history.history
     assert len(history.history["loss"]) > 0
+
+
+def test_load_trained_model_matches_saved_weights_exactly(tmp_path) -> None:
+    """`load_trained_model` (rebuild architecture + load weights) must be a
+    drop-in, bit-exact replacement for `keras.models.load_model` on the full
+    `.keras` file -- it exists specifically to avoid that file's Keras-version
+    portability problems (see `train_model`'s docstring)."""
+    X_train, y_train, X_val, y_val, X_test, _ = _linear_dataset()
+    set_global_seed(42)
+    model = build_model(n_features=2, config=SMALL_CONFIG)
+    model, _ = train_model(model, X_train, y_train, X_val, y_val, SMALL_CONFIG, tmp_path)
+
+    reloaded = load_trained_model(n_features=2, config=SMALL_CONFIG, weights_path=tmp_path / "best_model.weights.h5")
+
+    original_preds = predict(model, X_test)
+    reloaded_preds = predict(reloaded, X_test)
+    assert np.allclose(original_preds, reloaded_preds, atol=1e-6)
 
 
 def test_train_model_fits_linear_signal_reasonably() -> None:

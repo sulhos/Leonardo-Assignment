@@ -171,8 +171,13 @@ no sign of the severe overfitting that a 15k-parameter network on 39 training
 rows might be expected to produce, though this should not be over-generalized
 from a single training run on a single small split.
 
-Saved artifacts: `models/neural_network/best_model.keras`,
-`models/preprocessing/scaler.pkl`, `models/preprocessing/feature_columns.pkl`.
+Saved artifacts: `models/neural_network/best_model.weights.h5` (portable
+weights; loaded via `load_trained_model`, which rebuilds the architecture from
+`config/ml_training.yaml` rather than deserializing a full `.keras` file --
+the latter is not portable across Keras versions, see §16.1's note),
+`models/neural_network/best_model.keras` (full-model checkpoint, same-
+environment convenience only), `models/preprocessing/scaler.pkl`,
+`models/preprocessing/feature_columns.pkl`.
 
 ## 13. Evaluation Methods
 
@@ -315,12 +320,32 @@ reliability improvement.
 
 Full tables: `outputs/tables/accuracy_metrics_by_model_full.csv`,
 `reliability_metrics_by_model_full.csv`. Model artifacts:
+`models/neural_network_full/best_model.weights.h5` (portable, see §16.1),
 `models/neural_network_full/best_model.keras`,
-`models/preprocessing_full/{scaler.pkl,feature_columns.pkl}`.
+`models/preprocessing_full/{scaler.pkl,feature_columns.pkl}`. This section
+trains fresh in-notebook rather than reloading a saved model, so it was never
+exposed to the cross-version loading bug described in §16.1 -- the weights
+file is saved here purely for consistency/reuse, not because this section
+needed the fix.
 
 ## 16. Physical Verification of AI Predictions
 
 ### 16.1 Pilot (Stage 7, 100-scenario dataset)
+
+*Note on cross-environment reproducibility:* this notebook loads the saved
+neural network from `models/neural_network/best_model.weights.h5` (rebuilding
+the architecture from `config/ml_training.yaml` via `load_trained_model`),
+not the full `models/neural_network/best_model.keras` file. Loading a full
+`.keras` model requires deserializing every layer's initializer configuration
+(e.g. `GlorotUniform`), and Keras has changed that config's fields across
+versions -- a model saved by a newer Keras (this project's development
+environment) failed to load on Colab's older, separately-pinned Keras with
+`GlorotUniform.__init__() got an unexpected keyword argument 'input_axes'`.
+Weights-only loading sidesteps this: initializers only matter for the initial
+random draw, which loaded weights immediately overwrite, so the rebuilt
+architecture only needs to match shape, not initializer serialization
+details. Verified bit-exact (max abs prediction difference 0.0) against the
+original full-model load before this fix was adopted.
 
 For every model's every test-split prediction (9 scenarios x 4 models = 36
 verifications): rounded up to installable modules (ceiling, never down), the

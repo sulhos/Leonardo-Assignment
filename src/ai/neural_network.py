@@ -73,7 +73,22 @@ def train_model(
     checkpoint_dir: Path,
 ) -> tuple[keras.Model, keras.callbacks.History]:
     """Train with early stopping and best-model checkpointing per
-    config/ml_training.yaml `neural_network.training`."""
+    config/ml_training.yaml `neural_network.training`.
+
+    Saves two artifacts to `checkpoint_dir`: `best_model.keras` (full-model
+    checkpoint, for convenience within the same environment/Keras version)
+    and `best_model.weights.h5` (weights only, written *after* training from
+    the in-memory model -- which already holds the best epoch's weights via
+    `restore_best_weights`). Load via `load_trained_model`, not
+    `keras.models.load_model`: Keras's full-model format serializes layer
+    initializer configs (e.g. `GlorotUniform`), and newer Keras versions add
+    constructor arguments those classes reject on older installs (this broke
+    loading `best_model.keras` on Colab's pinned, older Keras -- see
+    `notebooks/05_model_comparison.ipynb`). Weights-only + rebuilding the
+    architecture from `config/ml_training.yaml` sidesteps that entirely,
+    since initializers are only used for the initial random draw, which the
+    loaded weights immediately overwrite.
+    """
     training_cfg = config["training"]
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_path = checkpoint_dir / "best_model.keras"
@@ -104,11 +119,22 @@ def train_model(
         verbose=0,
     )
 
+    model.save_weights(str(checkpoint_dir / "best_model.weights.h5"))
+
     logger.info(
         "Training finished after %d epochs (best val_loss=%.4f).",
         len(history.history["loss"]), min(history.history["val_loss"]),
     )
     return model, history
+
+
+def load_trained_model(n_features: int, config: dict, weights_path: Path) -> keras.Model:
+    """Rebuild the architecture from `config` (same as `build_model`) and load
+    saved weights, instead of `keras.models.load_model`. Portable across
+    Keras versions -- see `train_model`'s docstring for why this matters."""
+    model = build_model(n_features, config)
+    model.load_weights(str(weights_path))
+    return model
 
 
 def predict(model: keras.Model, features: pd.DataFrame) -> np.ndarray:
