@@ -132,8 +132,84 @@ def plot_wind_speed_distribution_and_power_curve(
     return fig
 
 
-def plot_metric_vs_battery_capacity(candidates: pd.DataFrame, metric_column: str, ylabel: str) -> plt.Figure:
-    raise NotImplementedError("Implemented in Stage 3.")
+def plot_metric_vs_battery_capacity(
+    candidates: pd.DataFrame,
+    metric_column: str,
+    ylabel: str,
+    target_line: float | None = None,
+    target_label: str = "Target",
+) -> plt.Figure:
+    """Generic candidate-sweep plot: a metric column vs. nominal battery
+    capacity, e.g. LPSP, curtailed_energy_kwh, or equivalent_annual_cost_eur."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(
+        candidates["nominal_battery_capacity_kwh"], candidates[metric_column],
+        marker="o", markersize=3, color="black", linewidth=1.2,
+    )
+    if target_line is not None:
+        ax.axhline(target_line, color="firebrick", linestyle="--", linewidth=1, label=target_label)
+        ax.legend()
+    ax.set_xlabel("Battery capacity (kWh)")
+    ax.set_ylabel(ylabel)
+    ax.set_title(f"{ylabel} vs. Battery Capacity")
+    fig.tight_layout()
+    return fig
+
+
+def plot_soc_profile(dispatch_result: pd.DataFrame, week_start: str, battery_min_soc_kwh: float, battery_max_soc_kwh: float, title: str) -> plt.Figure:
+    """Representative SOC trajectory for the 7 days starting at `week_start`."""
+    start = pd.Timestamp(week_start, tz=dispatch_result.index.tz)
+    end = start + pd.Timedelta(days=7)
+    mask = (dispatch_result.index >= start) & (dispatch_result.index < end)
+
+    fig, ax = plt.subplots(figsize=(12, 4))
+    ax.plot(dispatch_result.index[mask], dispatch_result["soc_kwh"].to_numpy()[mask], color="black", linewidth=1.2)
+    ax.axhline(battery_min_soc_kwh, color="firebrick", linestyle="--", linewidth=0.8, label="Min SOC")
+    ax.axhline(battery_max_soc_kwh, color="seagreen", linestyle="--", linewidth=0.8, label="Max SOC")
+    ax.set_ylabel("State of charge (kWh)")
+    ax.set_xlabel("Local time")
+    ax.set_title(title)
+    ax.legend()
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    return fig
+
+
+def plot_energy_flow_balance(dispatch_result: pd.DataFrame) -> plt.Figure:
+    """Annual energy-flow balance: renewable-side (direct supply, battery
+    charge, curtailed) and load-side (direct supply, battery discharge,
+    unserved) totals, as two stacked bars."""
+    renewable_flows = {
+        "Direct supply": dispatch_result["direct_supply_kwh"].sum(),
+        "Battery charge": dispatch_result["battery_charge_kwh"].sum(),
+        "Curtailed": dispatch_result["curtailed_kwh"].sum(),
+    }
+    load_flows = {
+        "Direct supply": dispatch_result["direct_supply_kwh"].sum(),
+        "Battery discharge": dispatch_result["battery_discharge_kwh"].sum(),
+        "Unserved": dispatch_result["unserved_kwh"].sum(),
+    }
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    colors = {"Direct supply": "seagreen", "Battery charge": "steelblue", "Curtailed": "lightgrey",
+              "Battery discharge": "orange", "Unserved": "firebrick"}
+
+    bottom = 0.0
+    for label, value in renewable_flows.items():
+        ax.bar("Renewable\nproduction", value, bottom=bottom, color=colors[label], label=label)
+        bottom += value
+
+    bottom = 0.0
+    for label, value in load_flows.items():
+        already_labeled = label in renewable_flows
+        ax.bar("Load", value, bottom=bottom, color=colors[label], label=None if already_labeled else label)
+        bottom += value
+
+    ax.set_ylabel("Annual energy (kWh)")
+    ax.set_title("Annual Energy-Flow Balance")
+    ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.0))
+    fig.tight_layout()
+    return fig
 
 
 def plot_predicted_vs_reference(y_true: pd.Series, y_pred: pd.Series, model_name: str) -> plt.Figure:

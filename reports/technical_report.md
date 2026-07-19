@@ -85,8 +85,35 @@ attempted as stretch goals, §16), accuracy metrics, operational metrics (§21).
 
 ## 14. Mechanistic Results
 
-*TODO (populate from real output once Stage 3 runs): baseline optimal battery
-capacity, feasibility at the baseline reliability target, key figures/tables.*
+Stage 3 (exhaustive battery-module search, 0-30 modules) was run against the Jinan
+2023 baseline case: fixed PV 20 kWp, fixed wind 10 kW, synthetic load (30,000
+kWh/year, 8.0 kW actual peak), LPSP target 1%.
+
+**Result: infeasible within the configured search range.** The smallest LPSP
+achieved at the largest tested candidate (30 modules, 460.8 kWh) was 2.99%, three
+times the 1% target. No module count from 0-30 satisfies the baseline reliability
+requirement, so per PROJECT_BRIEF.md §12 this is reported as infeasible rather than
+the 30-module candidate being mislabelled "optimal."
+
+This is *not* a case of insufficient annual renewable energy: annual PV+wind
+production (33,217 kWh) exceeds annual load (30,000 kWh) by 11%. Instead it is a
+**seasonal generation/load mismatch**: the monthly renewable-to-load ratio falls
+below 1.0 in January (0.94), July (0.93), and December (0.89), while running as
+high as 1.56 in April. A battery sized for daily/weekly cycling cannot bridge a
+month-scale seasonal deficit -- evidenced by the simultaneous presence of heavy
+curtailment (3,382 kWh/year wasted even at the largest tested candidate) and
+persistent unserved energy (898 kWh/year) in the same annual energy-flow balance.
+
+A diagnostic-only extended search (n_max=100, not the baseline result) found the
+target becomes feasible at 62 modules (952.3 kWh) -- more than double the configured
+range -- confirming this is a battery-capacity problem at a scale far beyond typical
+modular residential systems, not a bug in the search or dispatch logic. None of the
+99.0%/99.5%/99.9% load-served sensitivity targets are met within the configured
+range either.
+
+Full candidate-by-candidate results: `outputs/tables/baseline_battery_candidate_results.csv`.
+Figures: `outputs/figures/07_lpsp_vs_capacity.png` through `11_energy_flow_balance.png`.
+Mechanistic search runtime: ~0.036 s/candidate (31 candidates, ~1.1 s total).
 
 ## 15. AI-Model Results
 
