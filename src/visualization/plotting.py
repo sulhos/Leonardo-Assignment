@@ -212,5 +212,75 @@ def plot_energy_flow_balance(dispatch_result: pd.DataFrame) -> plt.Figure:
     return fig
 
 
+def plot_scenario_input_distributions(scenarios: pd.DataFrame, columns: list[str]) -> plt.Figure:
+    """Histogram grid of scenario input distributions (PROJECT_BRIEF.md §27, figure 12)."""
+    n = len(columns)
+    ncols = 3
+    nrows = -(-n // ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 3.5 * nrows))
+    axes = np.atleast_1d(axes).flatten()
+    for ax, col in zip(axes, columns):
+        ax.hist(scenarios[col].dropna(), bins=20, color="steelblue", edgecolor="white")
+        ax.set_title(col)
+    for ax in axes[n:]:
+        ax.axis("off")
+    fig.suptitle("Scenario Input Distributions")
+    fig.tight_layout()
+    return fig
+
+
+def plot_optimal_capacity_distribution(scenarios: pd.DataFrame) -> plt.Figure:
+    """Distribution of mechanistically optimal battery capacities among
+    feasible scenarios (PROJECT_BRIEF.md §27, figure 13)."""
+    feasible = scenarios.loc[scenarios["feasible"], "optimal_capacity_kwh"]
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.hist(feasible, bins=20, color="seagreen", edgecolor="white")
+    ax.set_xlabel("Optimal battery capacity (kWh)")
+    ax.set_ylabel("Number of scenarios")
+    ax.set_title(f"Distribution of Optimal Battery Capacity (n={len(feasible)} feasible scenarios)")
+    fig.tight_layout()
+    return fig
+
+
+def plot_feasibility_counts(scenarios: pd.DataFrame) -> plt.Figure:
+    """Feasible vs. infeasible scenario counts, infeasible split by reason
+    category (PROJECT_BRIEF.md §27, figure 14)."""
+    n_feasible = int(scenarios["feasible"].sum())
+    infeasible = scenarios.loc[~scenarios["feasible"]]
+    n_renewable_inadequate = int(infeasible["infeasibility_reason"].str.contains("Renewable-generation", na=False).sum())
+    n_battery_range = int(infeasible["infeasibility_reason"].str.contains("Battery-range", na=False).sum())
+
+    labels = ["Feasible", "Infeasible:\nrenewable inadequacy", "Infeasible:\nbattery-range"]
+    counts = [n_feasible, n_renewable_inadequate, n_battery_range]
+    colors = ["seagreen", "firebrick", "orange"]
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.bar(labels, counts, color=colors)
+    for i, c in enumerate(counts):
+        ax.text(i, c + 0.5, str(c), ha="center")
+    ax.set_ylabel("Number of scenarios")
+    ax.set_title("Feasible vs. Infeasible Scenarios")
+    fig.tight_layout()
+    return fig
+
+
+def plot_feature_correlation_matrix(scenarios: pd.DataFrame, columns: list[str]) -> plt.Figure:
+    """Correlation matrix heatmap for selected scenario columns (PROJECT_BRIEF.md §27, figure 15)."""
+    corr = scenarios[columns].corr()
+    fig, ax = plt.subplots(figsize=(0.7 * len(columns) + 3, 0.7 * len(columns) + 2))
+    im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1)
+    ax.set_xticks(range(len(columns)))
+    ax.set_xticklabels(columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(columns)))
+    ax.set_yticklabels(columns)
+    for i in range(len(columns)):
+        for j in range(len(columns)):
+            ax.text(j, i, f"{corr.iloc[i, j]:.2f}", ha="center", va="center", fontsize=8)
+    fig.colorbar(im, ax=ax, shrink=0.8, label="Correlation")
+    ax.set_title("Feature Correlation Matrix")
+    fig.tight_layout()
+    return fig
+
+
 def plot_predicted_vs_reference(y_true: pd.Series, y_pred: pd.Series, model_name: str) -> plt.Figure:
     raise NotImplementedError("Implemented in Stage 6.")
