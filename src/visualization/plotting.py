@@ -282,6 +282,21 @@ def plot_feature_correlation_matrix(scenarios: pd.DataFrame, columns: list[str])
     return fig
 
 
+def plot_training_history(history: dict, title: str = "Neural Network Training") -> plt.Figure:
+    """Training and validation loss curves (PROJECT_BRIEF.md §27, figure 16)."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(history["loss"], label="Training loss", color="steelblue")
+    ax.plot(history["val_loss"], label="Validation loss", color="firebrick")
+    best_epoch = int(np.argmin(history["val_loss"]))
+    ax.axvline(best_epoch, color="grey", linestyle="--", linewidth=0.8, label=f"Best epoch ({best_epoch})")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.set_title(title)
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
 def plot_predicted_vs_reference(y_true: pd.Series, y_pred: np.ndarray, model_name: str) -> plt.Figure:
     """Scatter of predicted vs. mechanistic-reference battery capacity, with
     a y=x reference line (PROJECT_BRIEF.md §27, figure 17). Generic across

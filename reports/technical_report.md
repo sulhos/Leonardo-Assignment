@@ -130,8 +130,31 @@ Results in §15.
 
 ## 12. Neural-Network Architecture and Training
 
-*TODO: architecture, framework (Keras/TensorFlow, per addendum §1.2), training
-configuration, early stopping / checkpointing (§18).*
+Framework: **Keras/TensorFlow** (pinned per refinement addendum §1.2), TensorFlow
+2.21, CPU-only (no GPU in this environment).
+
+Architecture, exactly as specified in `config/ml_training.yaml` (no changes made
+to try to improve results): input (37 features) → Dense(128, ReLU) → Dropout(0.10)
+→ Dense(64, ReLU) → Dense(32, ReLU) → Dense(1, ReLU) — 15,233 parameters total.
+The output-layer ReLU activation enforces non-negative capacity predictions;
+`src/ai/neural_network.py::predict` also applies a defensive `np.maximum(pred, 0)`
+as a second layer per §18.
+
+Training: Huber loss, Adam (lr=0.001), batch size 32, up to 500 epochs, early
+stopping on `val_loss` (patience 20, restore best weights), best-model
+checkpointing. Trained on the identical 39/8/9 Experiment A split and 37 features
+as the Stage 5 baselines, with inputs standardized by a scaler fit on the training
+split only.
+
+**Actual run:** converged in 178 epochs (~22s on CPU), best validation loss at
+epoch 157. The loss curve (`outputs/figures/16_training_validation_loss.png`)
+shows training and validation loss decreasing together with no divergence --
+no sign of the severe overfitting that a 15k-parameter network on 39 training
+rows might be expected to produce, though this should not be over-generalized
+from a single training run on a single small split.
+
+Saved artifacts: `models/neural_network/best_model.keras`,
+`models/preprocessing/scaler.pkl`, `models/preprocessing/feature_columns.pkl`.
 
 ## 13. Evaluation Methods
 
@@ -172,14 +195,15 @@ Mechanistic search runtime: ~0.036 s/candidate (31 candidates, ~1.1 s total).
 
 ## 15. AI-Model Results
 
-Test-split (9 scenarios) accuracy for the three Stage 5 baselines predicting
-`optimal_capacity_kwh`:
+Test-split (9 scenarios) accuracy for all four models predicting
+`optimal_capacity_kwh` (naive/Ridge/Random Forest from Stage 5, MLP from Stage 6):
 
 | Model | MAE (kWh) | RMSE (kWh) | R² | Bias (kWh) | % within 20% |
 |---|---|---|---|---|---|
 | Naive (median) | 131.4 | 158.4 | -2.21 | -131.4 | 11% |
 | Ridge | 76.5 | 92.9 | -0.10 | -8.2 | 11% |
 | Random Forest | 58.0 | 86.5 | 0.04 | -33.9 | 56% |
+| **Neural Network (MLP)** | **43.8** | **60.0** | **0.54** | **-7.3** | **67%** |
 
 Operational (under/over-prediction, reported separately from averaged accuracy
 per §21):
@@ -189,21 +213,25 @@ per §21):
 | Naive | 100% | 131.4 | 0% | 0.0 |
 | Ridge | 56% | 76.3 | 44% | 76.8 |
 | Random Forest | 44% | 103.4 | 56% | 21.8 |
+| Neural Network | 56% | 46.0 | 44% | 41.1 |
 
-**Read honestly, not optimistically.** R² is near zero or negative for every
-model on a 9-sample test split -- this is not a reliable performance estimate,
-it is what a small, high-dimensional (37-feature) regression problem with ~39
-training rows produces. Random Forest does beat Ridge beats Naive on MAE, which
-is a weak positive signal that the engineered features carry real information
-even at this scale, but nothing here should be read as "the model works." The
-research hypothesis (§2) is not yet confirmed or refuted by this result alone --
-Stage 6 (neural network) and, critically, Stage 7 (mandatory physical
-verification -- accuracy metrics on their own are explicitly insufficient per
-§20) are still required before drawing conclusions about AI performance.
+**Read honestly, not triumphantly.** The neural network outperforms every
+baseline on every accuracy metric in this run, and its loss curve shows no sign
+of severe overfitting despite 15,233 parameters against 39 training rows. That
+is a genuinely interesting result -- but it comes from **one training run on a
+9-sample test split**, which carries enormous sampling variance; a different
+random split, or the full 5,000-scenario dataset (Stage 8, stretch goal), could
+easily change the ranking. This is reported as the actual, unmanipulated
+outcome (not re-run or cherry-picked to look better or worse), not as
+confirmation of the research hypothesis (§2). Underprediction rate (56%) is
+still non-trivial and must not be waved away by the better averaged-error
+numbers -- Stage 7's mandatory physical verification (accuracy metrics alone
+are explicitly insufficient per §20) is required before any claim about
+whether these predictions are actually usable for a real installation.
 
 Full tables: `outputs/tables/accuracy_metrics_by_model.csv`,
 `reliability_metrics_by_model.csv`, `runtime_comparison_stage5.csv`.
-Figures: `outputs/figures/17`, `18`, `21`, `23`.
+Figures: `outputs/figures/16`, `17`, `18`, `21`, `23`.
 
 ## 16. Physical Verification of AI Predictions
 
