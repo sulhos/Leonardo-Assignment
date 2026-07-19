@@ -370,3 +370,67 @@ def plot_over_under_prediction_rates(operational_metrics_by_model: dict[str, dic
     ax.legend()
     fig.tight_layout()
     return fig
+
+
+def plot_reliability_pass_rate_by_model(summary_by_model: dict[str, dict]) -> plt.Figure:
+    """Physical-verification reliability pass rate across models
+    (PROJECT_BRIEF.md §27, figure 22) -- the key Stage 7 result."""
+    model_names = list(summary_by_model.keys())
+    pass_rates = [summary_by_model[m]["pct_satisfying_reliability"] for m in model_names]
+
+    fig, ax = plt.subplots(figsize=(2 + 1.5 * len(model_names), 5))
+    bars = ax.bar(model_names, pass_rates, color="seagreen")
+    for bar, rate in zip(bars, pass_rates):
+        ax.text(bar.get_x() + bar.get_width() / 2, rate + 0.02, f"{rate:.0%}", ha="center")
+    ax.axhline(1.0, color="grey", linestyle="--", linewidth=0.8)
+    ax.set_ylim(0, 1.1)
+    ax.set_ylabel("Reliability pass rate (verified)")
+    ax.set_title("Physical Verification: Reliability Pass Rate by Model")
+    fig.tight_layout()
+    return fig
+
+
+def plot_runtime_comparison(runtime_by_stage: dict[str, float]) -> plt.Figure:
+    """Runtime comparison across mechanistic search, ML training, and ML
+    inference stages (PROJECT_BRIEF.md §27, figure 24). Log scale, since
+    these span many orders of magnitude."""
+    labels = list(runtime_by_stage.keys())
+    values = list(runtime_by_stage.values())
+
+    fig, ax = plt.subplots(figsize=(2 + 1.2 * len(labels), 5))
+    ax.bar(labels, values, color="steelblue")
+    ax.set_yscale("log")
+    ax.set_ylabel("Seconds (log scale)")
+    ax.set_title("Runtime Comparison")
+    ax.tick_params(axis="x", rotation=30)
+    fig.tight_layout()
+    return fig
+
+
+def plot_accuracy_runtime_tradeoff(accuracy_by_model: dict[str, dict], inference_seconds_by_model: dict[str, float]) -> plt.Figure:
+    """Accuracy (MAE) vs. inference time per model (PROJECT_BRIEF.md §27,
+    figure 25)."""
+    fig, ax = plt.subplots(figsize=(7, 5))
+    for name in accuracy_by_model:
+        ax.scatter(inference_seconds_by_model[name], accuracy_by_model[name]["mae"], s=80, label=name)
+    ax.set_xscale("log")
+    ax.set_xlabel("Inference time per prediction (s, log scale)")
+    ax.set_ylabel("MAE (kWh)")
+    ax.set_title("Accuracy vs. Inference-Time Tradeoff")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
+def plot_cost_penalty_from_oversizing(summary_by_model: dict[str, dict]) -> plt.Figure:
+    """Additional annualized cost caused by AI oversizing, by model
+    (PROJECT_BRIEF.md §27, figure 26)."""
+    model_names = list(summary_by_model.keys())
+    penalties = [summary_by_model[m]["additional_cost_from_oversizing_eur"] for m in model_names]
+
+    fig, ax = plt.subplots(figsize=(2 + 1.5 * len(model_names), 5))
+    ax.bar(model_names, penalties, color="orange")
+    ax.set_ylabel("Additional annualized cost from oversizing (EUR)")
+    ax.set_title("Cost Penalty from AI Oversizing")
+    fig.tight_layout()
+    return fig

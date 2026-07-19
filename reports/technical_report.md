@@ -235,28 +235,147 @@ Figures: `outputs/figures/16`, `17`, `18`, `21`, `23`.
 
 ## 16. Physical Verification of AI Predictions
 
-*TODO (populate from real output once Stage 7 runs — mandatory, not optional):
-reliability pass rate, under/oversizing rates, cost/reliability consequences.*
+For every model's every test-split prediction (9 scenarios x 4 models = 36
+verifications): rounded up to installable modules (ceiling, never down), the
+actual hourly mechanistic dispatch was re-run with that battery size (using the
+scenario's own round-trip efficiency, usable SOC window, and reliability
+target), and the resulting LPSP checked against that scenario's own target.
+Mechanistic-optimal dispatch was also freshly re-run per scenario for a
+directly comparable diff (rather than trusting possibly-stale stored summary
+statistics).
+
+| Model | Reliability pass rate | % undersized | % oversized | Max underprediction (kWh) | Additional cost from oversizing (EUR/yr) |
+|---|---|---|---|---|---|
+| Naive | **0%** | 100% | 0% | 307.2 | 0 |
+| Ridge | 56% | 44% | 44% | 153.6 | 25,163 |
+| Random Forest | 56% | 44% | 56% | 215.0 | 9,846 |
+| Neural Network | **44%** | 56% | 44% | 92.2 | 14,223 |
+
+**This is the headline, mandatory-check result of the whole project.** The
+neural network had the best accuracy metrics of the four models (§15) but the
+**worst** reliability pass rate of the three non-trivial models -- because its
+errors skew toward underprediction (56% of its test predictions undersize the
+battery) more than Ridge's or Random Forest's do. Averaged accuracy metrics
+cannot see this: MAE and R² treat a 50 kWh underprediction and a 50 kWh
+overprediction identically, but only one of those is a reliability risk. This
+is precisely the failure mode Stage 7 exists to catch, and precisely why
+PROJECT_BRIEF.md §20 states accuracy metrics alone are insufficient. The naive
+baseline fails outright (0%) since it always predicts the training-set median,
+which is undersized for every one of these particular test scenarios.
+
+Full per-scenario verification tables: `outputs/tables/physical_verification_{model}.csv`.
+Summary: `physical_verification_summary_by_model.csv`. Figures: `outputs/figures/22`, `26`.
 
 ## 17. Accuracy and Computational-Efficiency Comparison
 
-*TODO: cross-model metric comparison; runtime comparison and break-even calculation.
-Note per refinement addendum §1.5: the mechanistic-time term in the break-even
-denominator is the full exhaustive battery-module search per scenario, not a single
-dispatch run — state this explicitly wherever the formula is reported.*
+| Model | MAE (kWh) | R² | Inference time (s/scenario) |
+|---|---|---|---|
+| Naive | 131.4 | -2.21 | 0.00002 |
+| Ridge | 76.5 | -0.10 | 0.00011 |
+| Random Forest | 58.0 | 0.04 | 0.00226 |
+| Neural Network | 43.8 | 0.54 | 0.01697 |
+
+Mechanistic exhaustive search: ~1.24 s/scenario (31-candidate sweep, the
+baseline case), pilot dataset generation (100 scenarios): ~131 s total.
+
+**Break-even (PROJECT_BRIEF.md §22, denominator per refinement addendum §1.5 --
+the full exhaustive search per scenario, not a single dispatch run):**
+
+| Model | Training time (s) | N_break_even (scenarios) |
+|---|---|---|
+| Ridge | 0.017 | ~100 |
+| Random Forest | 1.1 | ~101 |
+| Neural Network | 22.1 | ~119 |
+
+All three break-even points land close to the pilot's own size (100
+scenarios) -- meaning for a one-off 100-scenario evaluation, the mechanistic
+and AI development-plus-inference costs are roughly a wash. AI only becomes
+unambiguously cheaper in total once evaluating meaningfully more scenarios
+than that (e.g. the 5,000-scenario stretch-goal dataset, Stage 8, where AI
+inference cost is essentially negligible against a ~1.7-hour mechanistic
+re-run). For a single new scenario evaluated once, mechanistic search remains
+both cheaper and self-verifying -- there is no computational efficiency
+argument for AI at that scale.
 
 ## 18. Discussion
 
-*TODO: interpret results against the research hypothesis (§2) without assuming the
-neural network wins.*
+The research hypothesis (§2) proposed that a neural network "may approximate"
+mechanistic battery capacities with lower inference time, while noting
+"mechanistic verification may remain necessary." This pilot's results support
+the second half of that hypothesis more clearly than the first: mechanistic
+verification did in fact prove necessary -- and revealing exactly *why* it was
+necessary (the accuracy-vs-reliability disconnect in §16) is the pilot's most
+useful finding, arguably more useful than any single accuracy number.
+
+The first half (approximation quality) is genuinely inconclusive at this
+sample size: the neural network's MAE/R² are the best of the four models, but
+"best of four, n=9" is not a claim that survives scrutiny -- a different random
+split could plausibly change the ranking. What *is* robust across all three
+non-naive models is the qualitative pattern: each has a non-trivial
+underprediction rate (44-56%) that a pure accuracy-metric read would not have
+surfaced with the same clarity as the reliability-pass-rate figure does.
+
+The 44/56/44% oversizing rates (Random Forest highest) explain the cost-penalty
+ordering: Ridge's largest single errors happen to land on the expensive side
+(oversizing), giving it the highest oversizing cost penalty (EUR 25,163/yr)
+despite similar pass rate to Random Forest.
 
 ## 19. Limitations
 
-*TODO: single-location/single-year pilot scope if Stage 8 stretch goals were not
-reached, mechanistic-model-as-reference caveat (never "validation against reality"
-unless real operational data are available), generic turbine/PV assumptions, etc.*
+- **Single location, single weather year.** Jinan 2023 only -- Experiment B
+  (unseen weather year) and Experiment C (Västerås geographic transfer) are
+  stretch goals not attempted (refinement addendum §1.1). No claim here
+  generalizes to other climates or years.
+- **Small pilot dataset.** 100 scenarios, 56 feasible, 39/8/9 train/val/test.
+  Every accuracy and reliability number in §15-§17 is a point estimate with
+  substantial sampling uncertainty at n=9; none should be read as a precise
+  population estimate. The full 5,000-scenario dataset (Stage 8) was not
+  attempted.
+- **The mechanistic model is the reference, not physical ground truth**
+  (PROJECT_BRIEF.md §1). "Reliability pass rate" throughout this report means
+  agreement with the mechanistic dispatch simulation's LPSP calculation under
+  its own modelling assumptions (generic turbine curve, NOCT-based PV
+  temperature model, reanalysis-derived weather) -- not validation against a
+  real operating off-grid system, since no measured operational data exist for
+  this project.
+- **Fixed battery search range (0-30 modules).** Kept at the original spec'd
+  value per an explicit decision after Stage 3 (rather than widened), which
+  directly produced the 44% infeasible-scenario rate in Stage 4 and therefore
+  the reduced 56-scenario training population for Stages 5-7.
+- **Generic component models.** The wind turbine power curve and the PV
+  NOCT/temperature-coefficient assumptions are documented modelling
+  assumptions (`src/physics/wind_model.py`, `src/physics/pv_model.py`
+  docstrings), not manufacturer-certified curves for a specific product.
+- **One training run per model.** No repeated-seed variance analysis; the
+  reported neural-network results are from a single training run, not an
+  average over multiple seeds.
 
 ## 20. Conclusions
 
-*TODO: answer the five research-objective questions (§1) directly and honestly,
-including negative or inconclusive results if that is what was found.*
+Answering the five research questions (§1) directly:
+
+1. **Accuracy:** On this pilot, the neural network best reproduced mechanistic
+   battery capacities (MAE 43.8 kWh, R² 0.54 vs. Random Forest's 58.0 kWh /
+   0.04), but this is a single small-sample result, not a confident claim.
+2. **Speed:** AI inference is 3-5 orders of magnitude faster per scenario than
+   the mechanistic search, but break-even analysis shows this only pays off in
+   aggregate once evaluating on the order of 100+ scenarios (§17) -- it is not
+   a blanket efficiency win for one-off evaluations.
+3. **Reliability when verified:** **No, not consistently** -- reliability pass
+   rates of 44-56% across the three real models (§16), with the neural network
+   (best accuracy) paradoxically having the worst pass rate. This is the
+   project's clearest, most load-bearing finding.
+4. **Generalization to unseen conditions:** Not tested in this pilot (single
+   location/year; §19).
+5. **Practical trade-offs:** Mechanistic search is slow but self-verifying by
+   construction; AI is fast but requires the mechanistic verification step
+   demonstrated in Stage 7 before any prediction can be trusted for an actual
+   installation decision -- exactly the workflow this project implements, not
+   a theoretical caveat.
+
+**On the research hypothesis:** neither confirmed nor cleanly refuted. The
+"approximation with lower inference time" half is weakly and inconclusively
+supported; the "mechanistic verification may remain necessary" half is
+concretely demonstrated. Reporting this as a mixed, non-triumphant result is
+the intended outcome of the project's honesty requirements, not a shortfall in
+execution.
