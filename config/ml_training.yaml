@@ -32,7 +32,9 @@ baselines:
     model: ridge
     alpha_grid: [0.01, 0.1, 1.0, 10.0]
   tree:
-    model: gradient_boosting  # or random_forest; finalized in Stage 5
+    model: random_forest  # finalized in Stage 5: max_depth_grid's `null` (unlimited depth)
+                           # is natively supported by RandomForestRegressor but not by
+                           # GradientBoostingRegressor (which requires an int max_depth).
     n_estimators_grid: [100, 300]
     max_depth_grid: [3, 5, null]
 

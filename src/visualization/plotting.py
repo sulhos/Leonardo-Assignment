@@ -282,5 +282,76 @@ def plot_feature_correlation_matrix(scenarios: pd.DataFrame, columns: list[str])
     return fig
 
 
-def plot_predicted_vs_reference(y_true: pd.Series, y_pred: pd.Series, model_name: str) -> plt.Figure:
-    raise NotImplementedError("Implemented in Stage 6.")
+def plot_predicted_vs_reference(y_true: pd.Series, y_pred: np.ndarray, model_name: str) -> plt.Figure:
+    """Scatter of predicted vs. mechanistic-reference battery capacity, with
+    a y=x reference line (PROJECT_BRIEF.md §27, figure 17). Generic across
+    any model (baselines or the neural network) -- not NN-specific."""
+    y_true_arr = np.asarray(y_true, dtype=float)
+    y_pred_arr = np.asarray(y_pred, dtype=float)
+    lims = [0, max(y_true_arr.max(), y_pred_arr.max()) * 1.05]
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.plot(lims, lims, color="grey", linestyle="--", linewidth=1, label="y = x")
+    ax.scatter(y_true_arr, y_pred_arr, color="steelblue", edgecolor="white", s=50)
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    ax.set_xlabel("Mechanistic reference capacity (kWh)")
+    ax.set_ylabel("Predicted capacity (kWh)")
+    ax.set_title(f"Predicted vs. Reference: {model_name}")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
+def plot_residual_distribution(y_true: pd.Series, y_pred: np.ndarray, model_name: str) -> plt.Figure:
+    """Histogram of prediction residuals (predicted - reference), figure 18."""
+    residuals = np.asarray(y_pred, dtype=float) - np.asarray(y_true, dtype=float)
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.hist(residuals, bins=15, color="steelblue", edgecolor="white")
+    ax.axvline(0, color="firebrick", linestyle="--", linewidth=1)
+    ax.set_xlabel("Residual: predicted - reference (kWh)")
+    ax.set_ylabel("Count")
+    ax.set_title(f"Residual Distribution: {model_name}")
+    fig.tight_layout()
+    return fig
+
+
+def plot_cross_model_metric_comparison(metrics_by_model: dict[str, dict], metric_keys: list[str]) -> plt.Figure:
+    """Grouped bar chart comparing several accuracy metrics across models
+    (PROJECT_BRIEF.md §27, figure 21)."""
+    model_names = list(metrics_by_model.keys())
+    x = np.arange(len(metric_keys))
+    width = 0.8 / len(model_names)
+
+    fig, ax = plt.subplots(figsize=(2 + 2 * len(metric_keys), 5))
+    for i, model_name in enumerate(model_names):
+        values = [metrics_by_model[model_name][k] for k in metric_keys]
+        ax.bar(x + i * width, values, width, label=model_name)
+    ax.set_xticks(x + width * (len(model_names) - 1) / 2)
+    ax.set_xticklabels(metric_keys)
+    ax.set_ylabel("Value")
+    ax.set_title("Accuracy Metric Comparison Across Models")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
+def plot_over_under_prediction_rates(operational_metrics_by_model: dict[str, dict]) -> plt.Figure:
+    """Under-/over-prediction rate comparison across models (PROJECT_BRIEF.md
+    §27, figure 23)."""
+    model_names = list(operational_metrics_by_model.keys())
+    under = [operational_metrics_by_model[m]["underprediction_rate"] for m in model_names]
+    over = [operational_metrics_by_model[m]["overprediction_rate"] for m in model_names]
+
+    x = np.arange(len(model_names))
+    width = 0.35
+    fig, ax = plt.subplots(figsize=(2 + 1.5 * len(model_names), 5))
+    ax.bar(x - width / 2, under, width, label="Underprediction rate", color="firebrick")
+    ax.bar(x + width / 2, over, width, label="Overprediction rate", color="orange")
+    ax.set_xticks(x)
+    ax.set_xticklabels(model_names)
+    ax.set_ylabel("Rate")
+    ax.set_title("Under-/Over-prediction Rate by Model")
+    ax.legend()
+    fig.tight_layout()
+    return fig

@@ -92,12 +92,41 @@ Full results: `outputs/tables/scenario_inputs_and_labels.csv` /
 
 ## 10. Feature Engineering
 
-*TODO: load/generation/net-load/system features, leakage-avoidance measures (§15).*
+37 features per scenario across four groups (load, generation, net-load, system),
+computed by deterministically regenerating each scenario's hourly load/PV/wind
+series from its stored inputs (capacity, annual load, peak load, random seed) --
+the full 8,760-hour series were not persisted per scenario (100 x 8,760 x 3 would
+be redundant storage since regeneration is fast, ~54ms/scenario, and exact).
+
+Net-load features include the maximum consecutive-deficit-hour run length and the
+largest cumulative deficit energy event, computed directly from the regenerated
+hourly series -- these are what actually explain the Stage 3/4 infeasibility
+pattern (seasonal mismatch), not just annual totals.
+
+No target leakage: `optimal_capacity_kwh`, `optimal_n_modules`, `reference_lpsp`,
+and `reference_annualized_cost` are guarded by `src/ai/features.py`'s
+`LEAKAGE_COLUMNS` and asserted absent from the feature matrix at build time (test-
+covered).
 
 ## 11. Machine-Learning Baseline Models
 
-*TODO: naive, linear/ridge, tree-based baseline configuration and hyperparameter
-selection procedure (§17).*
+Three baselines trained on the **56 feasible pilot scenarios only** (infeasible
+scenarios have no real capacity label to regress against, so they are excluded
+rather than imputed):
+
+- **Naive**: `DummyRegressor(strategy="median")` -- predicts the training-set
+  median capacity regardless of features.
+- **Ridge regression**: alpha selected from `[0.01, 0.1, 1.0, 10.0]` by validation
+  MAE, then refit on the training split only.
+- **Random Forest**: `n_estimators` in `[100, 300]`, `max_depth` in `[3, 5, None]`,
+  selected the same way. (Config originally specified `gradient_boosting`;
+  finalized to `random_forest` in Stage 5 because `max_depth: null`, i.e.
+  unlimited depth, is natively meaningful for Random Forest but not supported by
+  scikit-learn's `GradientBoostingRegressor`, which requires an integer.)
+
+Split: Experiment A, grouped 70/15/15 (39/8/9 scenarios). Hyperparameter selection
+uses only train+val; the test split is touched exactly once, for final evaluation.
+Results in §15.
 
 ## 12. Neural-Network Architecture and Training
 
@@ -143,8 +172,38 @@ Mechanistic search runtime: ~0.036 s/candidate (31 candidates, ~1.1 s total).
 
 ## 15. AI-Model Results
 
-*TODO (populate from real output once Stage 5/6 run): accuracy metrics for every
-model (naive, linear, tree, MLP).*
+Test-split (9 scenarios) accuracy for the three Stage 5 baselines predicting
+`optimal_capacity_kwh`:
+
+| Model | MAE (kWh) | RMSE (kWh) | R² | Bias (kWh) | % within 20% |
+|---|---|---|---|---|---|
+| Naive (median) | 131.4 | 158.4 | -2.21 | -131.4 | 11% |
+| Ridge | 76.5 | 92.9 | -0.10 | -8.2 | 11% |
+| Random Forest | 58.0 | 86.5 | 0.04 | -33.9 | 56% |
+
+Operational (under/over-prediction, reported separately from averaged accuracy
+per §21):
+
+| Model | Underprediction rate | Mean underprediction (kWh) | Overprediction rate | Mean overprediction (kWh) |
+|---|---|---|---|---|
+| Naive | 100% | 131.4 | 0% | 0.0 |
+| Ridge | 56% | 76.3 | 44% | 76.8 |
+| Random Forest | 44% | 103.4 | 56% | 21.8 |
+
+**Read honestly, not optimistically.** R² is near zero or negative for every
+model on a 9-sample test split -- this is not a reliable performance estimate,
+it is what a small, high-dimensional (37-feature) regression problem with ~39
+training rows produces. Random Forest does beat Ridge beats Naive on MAE, which
+is a weak positive signal that the engineered features carry real information
+even at this scale, but nothing here should be read as "the model works." The
+research hypothesis (§2) is not yet confirmed or refuted by this result alone --
+Stage 6 (neural network) and, critically, Stage 7 (mandatory physical
+verification -- accuracy metrics on their own are explicitly insufficient per
+§20) are still required before drawing conclusions about AI performance.
+
+Full tables: `outputs/tables/accuracy_metrics_by_model.csv`,
+`reliability_metrics_by_model.csv`, `runtime_comparison_stage5.csv`.
+Figures: `outputs/figures/17`, `18`, `21`, `23`.
 
 ## 16. Physical Verification of AI Predictions
 
