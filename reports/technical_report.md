@@ -17,15 +17,88 @@ the report.*
 *Added per refinement addendum §1.3 — this section is expected by the thesis rubric
 and was missing from the original spec's outline.*
 
-*TODO (Stage 10): brief (≈1 page) situating this project against:*
-- *LPSP-based sizing methods for standalone PV/wind/battery systems*
-- *Sizing tools such as HOMER (and similar techno-economic optimization tools)*
-- *Prior machine-learning-for-sizing literature*
+**LPSP-based sizing methods for standalone PV/wind/battery systems.** The
+loss-of-power-supply-probability (LPSP) reliability metric used throughout this
+project (§8, §12) follows the same formulation as Yang, Lu & Zhou's foundational
+hybrid solar-wind sizing model, which iterates over candidate PV/wind/battery
+combinations, computes LPSP and annualized cost for each, and selects the
+cheapest combination meeting a reliability target (Yang, H., Lu, L., & Zhou, W.
+(2007). *A novel optimization sizing model for hybrid solar-wind power
+generation system.* Solar Energy, 81(1), 76–84). This project's exhaustive
+battery-module search (§8) is a direct, simplified instance of that same
+LPSP-driven search pattern, restricted to a single decision variable (battery
+capacity, given fixed PV/wind) rather than jointly searching PV, wind, and
+battery capacity together.
 
-*Citations must be real and findable (web search is acceptable) or explicitly marked
-"citations to be completed" — never fabricated (addendum §1.3).*
+**Techno-economic optimization tools.** HOMER (Lambert, T., Gilman, P., &
+Lilienthal, P. (2006). *Micropower system modeling with HOMER.* In F. A.
+Farret & M. G. Simões (Eds.), Integration of Alternative Sources of Energy
+(pp. 379–418). John Wiley & Sons) is the best-known example of this class of
+tool: given candidate system sizes, it simulates dispatch over a representative
+year and ranks designs by life-cycle cost. **OptiCE** (Campana, P. E., Zhang,
+Y., & Yan, J., https://optice.net/) — the MATLAB techno-economic optimization
+tool developed by this project's course instructor and collaborators, made
+available as example course material alongside a lecture on LLM-assisted
+management of PV/wind microgrids — follows the same simulate-then-rank
+pattern but goes further:
+it jointly optimizes PV tilt/azimuth/capacity, wind tower height/capacity,
+*and* battery capacity via a multi-objective genetic algorithm
+(`gamultiobj`), producing a Pareto front of life-cycle-cost-vs-renewables-share
+trade-offs rather than a single design. This project's mechanistic model
+(§6-§8) independently arrived at several of the same core modelling choices as
+OptiCE's dispatch/battery logic — a power-law wind-speed height extrapolation,
+a NOCT-based PV temperature model, and a symmetric charge/discharge efficiency
+split whose product recovers the specified round-trip efficiency (this
+project's `sqrt(round_trip_efficiency)` convention is structurally identical
+to OptiCE's `Battery_efficiency × charge_controller_efficiency` applied once
+per leg) — which is a useful cross-check that the mechanistic reference model
+used throughout this report is consistent with established practice in this
+specific research group, not an idiosyncratic reimplementation. Two respects in
+which OptiCE is more detailed than this project's model are noted as
+limitations in §19: a wind-speed-dependent PV cell-temperature correction, and
+a battery thermal/temperature-dependent-capacity model. OptiCE's joint
+PV/wind/battery optimization is also more general than this project's
+fixed-PV/wind, battery-only search — a deliberate scope choice explained in
+§19, made so that PV/wind capacity could instead vary *across* the sampled
+scenario dataset (§9) as inputs for the ML models to condition on, rather than
+being optimized to a single value.
 
-**Citations to be completed.**
+**Prior machine-learning-for-sizing literature.** Most existing ML work on
+hybrid PV/wind/battery systems targets short-term *forecasting* (solar
+irradiance, wind speed, or load) as an input to an otherwise conventional
+sizing or dispatch procedure, rather than replacing the sizing procedure
+itself — reviews of wind/solar forecasting techniques for grid integration
+survey this large body of work (Ssekulima, E. B., Anwar, M. B., Al Hinai, A.,
+& El Moursi, M. S. (2016). *Wind speed and solar irradiance forecasting
+techniques for enhanced renewable energy integration with the grid: a
+review.* IET Renewable Power Generation, 10(7), 885–899). Separately, this
+project's own PV model (§6) sidesteps two problems this course's lecture
+material identifies as central to computing irradiance on a tilted surface
+from measurements (Duffie, J. A., Beckman, W. A., & Worek, W. M. (2013).
+*Solar engineering of thermal processes* (Vol. 3). New York: Wiley): not
+knowing the beam/diffuse split of measured irradiance (usually resolved with
+a decomposition model such as Erbs), and not knowing the solar
+position/incidence angle needed for a transposition model such as Liu and
+Jordan. Both are avoided here rather than solved: NASA POWER's hourly product
+already reports direct-normal and diffuse-horizontal irradiance as separate
+fields (no decomposition model needed, confirmed in `src/physics/pv_model.py`'s
+docstring), and `pvlib.irradiance.get_total_irradiance` computes solar
+position and the tilted-surface transposition internally. Work that uses ML
+to predict *sizing* outcomes directly, as this
+project does, is comparatively less common; a recent example combines
+gradient-boosted tree ensembles (forecasting weather/load over the system
+lifetime) with metaheuristic optimization to size a PV/battery system under
+net-metering costs (Abdullah, H. M., Park, S., Seong, K., & Lee, S. (2023).
+*Hybrid Renewable Energy System Design: A Machine Learning Approach for
+Optimal Sizing with Net-Metering Costs.* Sustainability, 15(11), 8538).
+That work uses ML to generate better *inputs* to a conventional metaheuristic
+optimizer; this project instead trains an ML model to directly predict the
+*sizing decision itself* (the mechanistic search's output) from scenario
+parameters, then treats the mechanistic search as ground truth for mandatory
+post-hoc verification (§16) rather than as a downstream optimizer to feed —
+a different position for the mechanistic and ML components to occupy relative
+to each other, and the specific comparison this project's research questions
+(§3) are about.
 
 ## 3. Research Objective and Questions
 
@@ -562,6 +635,30 @@ summed across 430 scenarios), even as the underlying pass rates improve.
   NOCT/temperature-coefficient assumptions are documented modelling
   assumptions (`src/physics/wind_model.py`, `src/physics/pv_model.py`
   docstrings), not manufacturer-certified curves for a specific product.
+- **No wind-speed cooling term in the PV cell-temperature model, and no
+  battery thermal/temperature-dependent-capacity model.** Identified by direct
+  comparison against OptiCE (§2): OptiCE's PV temperature model includes a
+  wind-speed-dependent cooling term, and OptiCE's battery model corrects
+  usable capacity downward for battery temperatures below 25°C via a fitted
+  quadratic factor. This project's PV model uses a fixed-coefficient NOCT
+  temperature model without a wind term, and its battery model has no thermal
+  state at all -- usable capacity is constant regardless of ambient
+  conditions. Both are standard simplifications for an LPSP-focused sizing
+  study (rather than a detailed thermal-management study) but would bias
+  results toward *underestimating* required battery capacity in climates with
+  temperature extremes, since the mechanistic reference itself never derates
+  capacity for temperature.
+- **PV and wind capacity are scenario inputs, not jointly optimized decision
+  variables.** OptiCE (§2) optimizes PV tilt/azimuth/capacity, wind tower
+  height/capacity, and battery capacity jointly via a multi-objective genetic
+  algorithm to find a single best design. This project instead samples PV and
+  wind capacity across a range (§9) and only exhaustively searches battery
+  capacity for each sampled combination -- a deliberate choice, since the
+  research question here is about predicting the *battery-sizing outcome*
+  across many different fixed systems, not about finding the single
+  cost-optimal system. A consequence is that this project makes no claim
+  about whether any of its sampled PV/wind combinations are themselves
+  economically optimal.
 - **One training run per model, at both scales.** No repeated-seed variance
   analysis; the reported neural-network results are from single training runs,
   not averages over multiple seeds. This is a distinct source of uncertainty
