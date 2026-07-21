@@ -227,3 +227,28 @@ def test_build_dataset_resumable(tmp_path) -> None:
     df2 = build_dataset(5, out_dir, random_seed=1, site_config=full_site_config, ranges=RANGES, n_max=3, dataset_name="unit_test", resume=True)
     assert len(df2) == 5
     assert set(df1["scenario_id"]).issubset(set(df2["scenario_id"]))
+
+
+def test_build_dataset_refuses_to_resume_under_a_different_config(tmp_path) -> None:
+    # Regression test for a real bug hit during the industrial-scale pivot:
+    # resume=True (the default) silently returned an entirely stale dataset
+    # generated under the OLD (residential) config, because every
+    # scenario_id in the new (industrial) request already existed in the
+    # old CSV -- no error, no new rows, just quietly wrong data.
+    from src.config import PROJECT_ROOT, load_site_config
+
+    cached_weather_path = PROJECT_ROOT / "data" / "processed" / "jinan_2023_weather.csv"
+    if not cached_weather_path.is_file():
+        pytest.skip("No cached Jinan 2023 weather available; skipping dataset_builder integration test.")
+
+    full_site_config = load_site_config("jinan")
+    out_dir = tmp_path / "scenarios"
+
+    build_dataset(3, out_dir, random_seed=1, site_config=full_site_config, ranges=RANGES, n_max=3, dataset_name="unit_test")
+
+    different_ranges = {**RANGES, "pv_capacity_kwp": [100, 200]}
+    with pytest.raises(RuntimeError, match="Refusing to resume"):
+        build_dataset(
+            3, out_dir, random_seed=1, site_config=full_site_config, ranges=different_ranges,
+            n_max=3, dataset_name="unit_test", resume=True,
+        )

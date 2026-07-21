@@ -106,13 +106,32 @@ def build_dataset(
     csv_path = output_dir / f"{dataset_name}_scenarios.csv"
     metadata_path = output_dir / f"{dataset_name}_metadata.json"
 
+    # n_scenarios is deliberately excluded from the hash: growing a dataset
+    # across resumed calls with a larger n_scenarios (e.g. the incremental
+    # 100 -> 500 -> 1000 -> 5000 scale-up, PROJECT_BRIEF.md Addendum §1.1)
+    # is the canonical legitimate resume pattern, not a stale-config
+    # mismatch. Everything else must match for existing rows to stay valid.
     config_hash = _config_hash(
-        {"ranges": ranges, "random_seed": random_seed, "n_scenarios": n_scenarios,
+        {"ranges": ranges, "random_seed": random_seed,
          "location": location, "weather_year": weather_year, "n_max": n_max}
     )
 
     completed_ids: set[int] = set()
     if resume and csv_path.is_file():
+        if metadata_path.is_file():
+            existing_config_hash = json.loads(metadata_path.read_text()).get("config_hash")
+            if existing_config_hash is not None and existing_config_hash != config_hash:
+                raise RuntimeError(
+                    f"Refusing to resume {csv_path}: its config_hash ({existing_config_hash}) "
+                    f"does not match the current request's config_hash ({config_hash}). This "
+                    "means ranges/n_scenarios/location/weather_year/n_max changed since that "
+                    "file was generated (e.g. after a config edit) -- resuming would silently "
+                    "mix stale rows generated under the old config with the new request instead "
+                    "of regenerating, and (if n_scenarios/n_scenarios's scenario_ids fully "
+                    "overlap) could return the *entirely* stale dataset with no new rows at all. "
+                    f"Delete {csv_path} and {metadata_path} (or pass resume=False) to force a "
+                    "clean regeneration under the new config."
+                )
         existing = pd.read_csv(csv_path)
         completed_ids = set(existing["scenario_id"].tolist())
         logger.info("Resuming dataset build: %d scenarios already completed.", len(completed_ids))
