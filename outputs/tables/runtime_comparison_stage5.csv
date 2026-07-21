@@ -1,7 +1,7 @@
 stage,seconds
-mechanistic_search_per_scenario,0.1798617165900032
-feature_engineering_per_scenario,0.05185427251282048
-naive_train,0.00103559000012865
-ridge_train,0.01644817300007162
-random_forest_train,0.8855539569999564
-inference_per_prediction,0.0012824672857104382
+mechanistic_search_per_scenario,0.2905733737000128
+feature_engineering_per_scenario,0.05573589416000004
+naive_train,0.0010846420000234502
+ridge_train,0.01725072900012492
+random_forest_train,1.3734010729999682
+inference_per_prediction,0.0006237719583310763
