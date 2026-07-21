@@ -1,8 +1,11 @@
 # Comparison of Neural-Network and Mechanistic Models for Battery Sizing in an Off-Grid PV–Wind Energy System
 
-**Status:** structural draft created in Stage 1 (project scaffold). No results exist
-yet — every numbered section below is a placeholder to be populated with real output
-from later stages. Nothing in this document should be read as a finding.
+**Status:** Sections 9-20 (Scenario-Dataset Generation through Conclusions) contain
+real results from the industrial-scale build (PROJECT_BRIEF.md Addendum 2).
+Sections 1, 3-8 remain Stage 1 structural placeholders (introduction, research-question
+prose, system description, and method write-ups deferred to a documentation pass) --
+those specific sections should not be read as findings; every section from §9 onward
+should be.
 
 ---
 
@@ -653,45 +656,54 @@ absolute advantage without changing when it starts to have one.
 The research hypothesis (§2) proposed that a neural network "may approximate"
 mechanistic battery capacities with lower inference time, while noting
 "mechanistic verification may remain necessary." Taken together, the pilot
-and full-scale results tell a two-act story that is worth keeping intact
-rather than only reporting the final act.
+and full-scale results tell a two-act story -- and at industrial scale, the
+two acts are more sharply opposed than they were in the residential-scale
+build that preceded this pivot (PROJECT_BRIEF.md Addendum 2).
 
-**Act one (pilot, §15.1/§16.1):** at n=9, the neural network had the best
-accuracy but the *worst* reliability pass rate of the three real models --
-a genuinely counterintuitive result. It was reported honestly, with an
-explicit caveat that "best of four, n=9" does not survive scrutiny and that a
-different split could plausibly change the ranking. That caveat was not
-hedging for its own sake; it was a correct prediction. Mechanistic
-verification (Stage 7) proved necessary precisely because it caught a failure
-mode -- an accuracy/reliability disconnect -- that accuracy metrics alone
-could not see, regardless of how the ranking would later resolve.
+**Act one (pilot, §15.1/§16.1):** at n=7, the neural network had *both* the
+worst accuracy (R² -0.926, worse than the naive median baseline) *and* the
+worst reliability pass rate (14.3%, vs. Ridge/Random Forest's 57.1%) of the
+four models. Unlike the residential-scale pilot -- where the neural network's
+accuracy was genuinely good and only its reliability lagged, a real
+accuracy/reliability disconnect that Stage 7's mandatory verification exists
+specifically to catch -- this pilot's physical verification did not surface a
+hidden failure mode invisible to accuracy metrics. It mostly confirmed what
+§12's diverging training-loss curve and §15.1's accuracy table already showed:
+27 training rows was not enough data for this 15,233-parameter architecture
+to learn a usable model here, full stop, before verification even entered
+the picture.
 
-**Act two (full-scale, §15.2/§16.2):** at n=430, the ranking flips to a clean
-monotonic match between accuracy and reliability (naive 53.5% < Ridge 70.0% <
-Random Forest 85.8% < neural network 98.8%), and the neural network's
-undersizing collapses from 56% of test predictions to 1.2%. This is the
+**Act two (full-scale, §15.2/§16.2):** at n=318, the ranking becomes a clean
+monotonic match between accuracy and reliability (naive 53.8% < Ridge 68.2% <
+Random Forest 73.3% < neural network 79.2%), and the neural network's
+undersizing rate falls from 85.7% of test predictions to 20.8%. This is the
 statistically stronger result and the one that should carry more weight in
 answering the research questions (§20) -- but it does not retroactively make
-the pilot's report wrong. It confirms that the pilot's own stated uncertainty
-was calibrated correctly: a small sample produced a real but unstable
-signal, and a 48x larger sample resolved it in the *opposite* direction. This
-is precisely the kind of result the addendum's "test the hypothesis, don't
-assume the NN wins" instruction is designed to surface -- had Stage 8/9 not
-been attempted, the pilot's contrary finding would have stood as the
-project's headline result, materially overstating the mechanistic-verification
-failure rate of the best model.
+the pilot's report wrong, any more than it did for the residential build. It
+confirms that model quality, not measurement noise, was the pilot's binding
+constraint: the same architecture and hyperparameters, given 1,477 training
+rows instead of 27, produce the best-performing model of the four by a wide
+margin. This is precisely the kind of result the addendum's "test the
+hypothesis, don't assume the NN wins" instruction is designed to surface --
+had Stage 8/9 not been attempted, the pilot's negative finding would have
+stood as the project's headline result, understating what this architecture
+can actually do once given enough data.
 
-What is robust across *both* scales is the qualitative pattern that
-underprediction is a real, non-trivial risk for every model at small scale,
+What is robust across *both* scales, and across *both* the residential and
+industrial deployment contexts, is the qualitative pattern that
+underprediction is a real, non-trivial risk at small scale for every model,
 and that oversizing remains the dominant error mode for every model even
 after accuracy improves at large scale (§16.2) -- accuracy improving does not
-mean the cost-of-error problem disappears, only that it shrinks in magnitude.
-The 44/56/44% pilot oversizing rates (Random Forest highest) explain that
-stage's cost-penalty ordering: Ridge's largest single errors happened to land
-on the expensive side, giving it the highest oversizing cost penalty (EUR
-25,163/yr) despite a similar pass rate to Random Forest. At full scale the
-same qualitative pattern holds (oversizing cost penalties of EUR 281k-803k/yr
-summed across 430 scenarios), even as the underlying pass rates improve.
+mean the cost-of-error problem disappears, only that it shrinks in magnitude
+(relatively; in absolute EUR terms, industrial-scale oversizing costs are an
+order of magnitude larger than the residential build's, simply because the
+systems themselves are far larger). The pilot's 42.9%/42.9%/57.1%/14.3%
+oversizing rates (naive/Ridge/RF/NN) explain that stage's cost-penalty
+ordering: Random Forest's largest single errors happened to land on the
+expensive side, giving it the highest oversizing cost penalty (EUR 631,335/yr)
+despite a pass rate similar to Ridge's. At full scale the same qualitative
+pattern holds (oversizing cost penalties of EUR 2.8M-17.9M/yr summed across
+318 scenarios), even as the underlying pass rates improve substantially.
 
 ## 19. Limitations
 
@@ -700,12 +712,15 @@ summed across 430 scenarios), even as the underlying pass rates improve.
   geographic transfer) are stretch goals not attempted (refinement addendum
   §1.1). No claim here generalizes to other climates or years.
 - **Sample-size sensitivity is now a demonstrated finding, not just a
-  caveat.** The reliability-pass-rate ranking reported in §16.1 (n=9) and
-  §16.2 (n=430) genuinely reversed between pilot and full scale (§18). The
-  full 5,000-scenario dataset (2,858 feasible, 430-scenario test split)
-  substantially reduces sampling uncertainty relative to the pilot, but every
-  number in this report is still a point estimate from one split of one
-  dataset, not a guarantee against further movement at even larger scale.
+  caveat -- and a more severe one at industrial scale than at residential
+  scale.** The reliability-pass-rate ranking reported in §16.1 (n=7) and
+  §16.2 (n=318) reversed completely between pilot and full scale (§18): the
+  neural network went from worst-on-both-accuracy-and-reliability to
+  best-on-both. The full 5,000-scenario dataset (2,111 feasible, 318-scenario
+  test split) substantially reduces sampling uncertainty relative to the
+  pilot, but every number in this report is still a point estimate from one
+  split of one dataset, not a guarantee against further movement at even
+  larger scale.
 - **The mechanistic model is the reference, not physical ground truth**
   (PROJECT_BRIEF.md §1). "Reliability pass rate" throughout this report means
   agreement with the mechanistic dispatch simulation's LPSP calculation under
@@ -715,11 +730,13 @@ summed across 430 scenarios), even as the underlying pass rates improve.
   this project. This holds at both pilot and full scale: a larger sample
   makes the AI-vs-mechanistic *agreement* more statistically reliable, but
   does not change what that agreement is evidence of.
-- **Fixed battery search range (0-30 modules).** Kept at the original spec'd
-  value per an explicit decision after Stage 3 (rather than widened), which
-  produced a ~44% infeasible-scenario rate at both pilot and full scale
-  (44% pilot, 42.84% full) and therefore excludes those scenarios from the
-  training/test population for Stages 5-9.
+- **Fixed battery search range (0-80 modules, 250 kWh each; widened from the
+  residential build's 0-30/15.36 kWh for this industrial scale).** Kept at
+  this value per the same reasoning applied after the residential build's
+  Stage 3 (a search range is a modelling decision made once, not re-litigated
+  per scenario), which produced a ~58%/~58% infeasible-scenario rate at pilot
+  and full scale respectively (39% pilot / 42.2% full feasible) and therefore
+  excludes those scenarios from the training/test population for Stages 5-9.
 - **Generic component models.** The wind turbine power curve and the PV
   NOCT/temperature-coefficient assumptions are documented modelling
   assumptions (`src/physics/wind_model.py`, `src/physics/pv_model.py`
@@ -755,6 +772,15 @@ summed across 430 scenarios), even as the underlying pass rates improve.
   could in principle shift under a different training seed, though the much
   larger test set makes this less likely to matter than it would at pilot
   scale.
+- **The industrial load-profile shape is a documented modelling assumption,
+  not derived from a real facility's metered data** (`src/physics/
+  load_profile.py`'s `industrial_baseline` family, PROJECT_BRIEF.md Addendum
+  2): two-shift operation, a 45% weekend reduction, and a weak seasonal
+  swing. A continuous-process facility (steel, chemicals) or a strictly
+  weekdays-only operation would have a materially different shape, and every
+  downstream number in this report -- from Stage 3's baseline feasibility
+  finding through the full 5,000-scenario dataset -- is conditional on this
+  specific shape choice.
 - **No battery-price sensitivity analysis.** The full sensitivity sweep across
   battery module cost assumptions (PROJECT_BRIEF.md stretch goal) was not
   attempted; all costs use the single fixed `installed_cost_eur_per_kwh` in
@@ -762,53 +788,81 @@ summed across 430 scenarios), even as the underlying pass rates improve.
 
 ## 20. Conclusions
 
-Answering the five research questions (§1) directly, weighting the full-scale
-(Stage 8/9) result more heavily than the pilot's per §18, while keeping both:
+This report covers the industrial deployment context (combined PV+wind
+capacity ≤5,000 kW, `industrial_baseline` load profile), adopted partway
+through the project (PROJECT_BRIEF.md Addendum 2) in place of the originally
+residential-scale build. Answering the five research questions (§1) directly,
+weighting the full-scale (Stage 8/9) result more heavily than the pilot's per
+§18, while keeping both:
 
-1. **Accuracy:** Yes, and more confidently than the pilot alone suggested. At
-   full scale, the neural network most accurately reproduced mechanistic
-   battery capacities (MAE 5.78 kWh, R² 0.995 vs. Random Forest's 14.38 kWh /
-   0.962), a result now backed by a 430-scenario test set rather than 9.
-2. **Speed:** AI inference is 3-5 orders of magnitude faster per scenario than
-   the mechanistic search at both scales tested. Break-even analysis (§17)
-   shows this pays off in aggregate once a model is reused for meaningfully
-   more evaluations than the size of the dataset it was trained on (~100 for
-   the pilot-trained models, ~5,000-5,033 for the full-dataset-trained
+1. **Accuracy:** Yes, and dramatically more confidently than the pilot alone
+   suggested -- in fact the pilot alone suggested the opposite. At full
+   scale, the neural network most accurately reproduced mechanistic battery
+   capacities (MAE 332.8 kWh, R² 0.985 vs. Random Forest's 688.8 kWh / 0.950),
+   a result now backed by a 318-scenario test set rather than 7, where the
+   same architecture had been the *worst*-performing model (R² -0.926).
+2. **Speed:** AI inference is several orders of magnitude faster per scenario
+   than the mechanistic search at both scales tested, though the numba
+   dispatch speedup (§9) narrowed the mechanistic method's absolute
+   disadvantage relative to the residential build without changing where the
+   break-even point falls in relative terms. Break-even analysis (§17) shows
+   this pays off in aggregate once a model is reused for meaningfully more
+   evaluations than the size of the dataset it was trained on (~100-219 for
+   the pilot-trained models, ~5,000-5,189 for the full-dataset-trained
    models) -- it is not a blanket efficiency win for one-off evaluations at
    either scale.
-3. **Reliability when verified:** **Yes, and substantially better than the
-   pilot indicated.** The pilot's headline finding -- that the
-   most-accurate model (the neural network) had the *worst* reliability pass
-   rate (44%) -- did not hold at full scale, where reliability pass rate
-   tracked accuracy exactly (naive 53.5% < Ridge 70.0% < Random Forest 85.8%
-   < neural network 98.8%). This reversal is itself the project's clearest
-   finding: a small, honestly-reported counterintuitive result was directly
-   tested at 48x the sample size and resolved in the opposite direction,
-   which is a demonstration of why the mandatory physical-verification step
-   (§16) and the addendum's insistence on testing rather than assuming the
-   hypothesis both matter in practice, not just in principle.
+3. **Reliability when verified:** **Yes at full scale, decisively no at pilot
+   scale -- and the gap between the two is the project's clearest finding
+   at this deployment scale.** The pilot's neural network failed both the
+   accuracy test and the mandatory physical-verification check (14.3% pass
+   rate, vs. Ridge/Random Forest's 57.1%); at full scale, reliability pass
+   rate tracked accuracy exactly (naive 53.8% < Ridge 68.2% < Random Forest
+   73.3% < neural network 79.2%). Unlike the residential build's pilot result
+   (an accuracy/reliability *disconnect* that verification specifically
+   exists to catch), this pilot's verification mostly corroborated what its
+   accuracy numbers already showed -- but the underlying lesson is the same:
+   a small, honestly-reported negative result was directly retested at 48x
+   the sample size, resolved in the opposite direction, and the mandatory
+   physical-verification step (§16) confirmed the full-scale result on a
+   fresh mechanistic re-run rather than on stored summary statistics. Even
+   at full scale, 20.8% of the best model's predictions still undersize the
+   battery -- "reliable" is a large improvement over the pilot, not a solved
+   problem.
 4. **Generalization to unseen conditions:** Not tested (single location/year
    at both pilot and full scale; §19). This remains the most significant
-   unaddressed research question.
+   unaddressed research question, and applies identically to the industrial
+   and (unreported) residential deployment contexts.
 5. **Practical trade-offs:** Mechanistic search is slow but self-verifying by
    construction; AI is fast and, at sufficient training-set scale, accurate
    and reliable by the mechanistic model's own standard -- but only once
-   verified against it (Stage 7/9), and only for the single location/year
-   this project actually tested. Oversizing remains the dominant residual
-   error mode for every model even at full scale (§16.2, §18), so "reliable"
-   here means "meets the reliability target," not "minimum-cost."
+   verified against it (Stage 7/9), and only for the single location/year and
+   single load-profile shape this project actually tested. Oversizing remains
+   the dominant residual error mode for every model even at full scale
+   (§16.2, §18), and the absolute cost of that oversizing is an order of
+   magnitude larger at industrial scale than at residential scale simply
+   because the systems themselves are larger -- so "reliable" here means
+   "meets the reliability target," not "minimum-cost," and the cost of being
+   wrong scales with the size of the system being sized.
 
 **On the research hypothesis:** more clearly supported at full scale than the
-pilot alone suggested, but with an important qualification about *how* that
-support was established. The "approximation with lower inference time" half
-is now well-supported (§15.2); the "mechanistic verification may remain
-necessary" half is concretely demonstrated by the very fact that verification
-is what caught the pilot's misleading small-sample signal and what confirmed
-the full-scale result actually holds up under a fresh mechanistic re-run
-rather than being read off stored summary statistics. Reporting both the
-pilot's contrary result and the full-scale reversal, rather than only the
-final favourable numbers, is the intended outcome of the project's honesty
-requirements -- an NN that "wins" only because the small-sample counter-result
-was quietly dropped would be a materially weaker piece of evidence than the
-same NN "winning" after that counter-result was reported, then explicitly
-retested and explained.
+pilot alone suggested -- and, at this industrial deployment scale, the pilot
+alone would have actively pointed the wrong direction on both halves of the
+hypothesis. The "approximation with lower inference time" half is now
+well-supported (§15.2); the "mechanistic verification may remain necessary"
+half is concretely demonstrated by the fact that verification is what
+confirmed the full-scale result actually holds up under a fresh mechanistic
+re-run, not by a dramatic accuracy/reliability disconnect this time (that was
+the residential build's finding, not this one). Reporting both the pilot's
+negative result and the full-scale reversal, rather than only the final
+favourable numbers, is the intended outcome of the project's honesty
+requirements -- an NN that "wins" only because a bad small-sample result was
+quietly dropped would be a materially weaker piece of evidence than the same
+NN "winning" after that result was reported, explicitly retested, and
+explained. The larger methodological lesson this industrial pivot adds to the
+residential build's original finding: **the specific way a pilot-to-full-scale
+result reverses is not itself a stable pattern to expect** -- the residential
+pilot showed a subtle accuracy/reliability disconnect that verification alone
+could catch; this industrial pilot showed an overt, verification-independent
+failure to learn from too little data. Both are real, both are worth
+reporting, and neither should be mistaken for a general rule about how neural
+networks behave at small sample sizes in this problem class.
