@@ -24,8 +24,18 @@ weather_years: [2023]
 ranges:
   pv_capacity_kwp: [500, 3500]
   wind_capacity_kw: [200, 2000]
-  annual_load_kwh: [3000000, 21000000]
-  peak_load_kw: [500, 4200]
+  # Recalibrated after the first Stage 3 run: at the 5,000 kW combined
+  # PV+wind cap below, Jinan's blended capacity factor (~14.8%) caps annual
+  # renewable production at ~6.5 GWh/year. The original [3,000,000,
+  # 21,000,000] range was renewable-inadequate for nearly every scenario
+  # (not just seasonally mismatched), which would produce a dataset
+  # dominated by trivial "too little energy" labels rather than genuine
+  # battery-sizing challenges. Rescaled down so the range brackets the
+  # ~6.5 GWh/year ceiling, matching the residential project's pattern of a
+  # mix of feasible and infeasible (mostly seasonal-timing-limited)
+  # scenarios.
+  annual_load_kwh: [1200000, 6500000]
+  peak_load_kw: [250, 1300]
   reliability_target_load_served: [0.990, 0.999]
   round_trip_efficiency: [0.88, 0.97]
   usable_soc_window_fraction: [0.70, 0.90]
