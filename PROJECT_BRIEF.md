@@ -150,6 +150,73 @@ fully recoverable from git history if needed. The technical report's Related Wor
 sections, and the OptiCE comparison within them, remain valid for the industrial case and were not
 tied to the residential framing specifically.
 
+### 1.8 Addendum 3: diesel-backed hybrid system, min-LCOE battery objective (post-completion)
+
+Produced after the full industrial-scale build (Addendum 2) was already complete, tested, and
+written up. Decided after reviewing the course lecture's OptiCE chart ("Typical results (1)":
+renewable share % vs. LCOE $/kWh, PV+battery and PV+wind+battery series, with diesel backstopping
+every point on the curve) and confirming this project's own physical-verification comparison
+(mechanistic vs. neural network) was under-visualized relative to it. This addendum takes
+precedence over Addendum 2 and Part 2 wherever they assumed a hard-reliability-constrained,
+no-backup-generator off-grid system (PROJECT_BRIEF.md §3, §12, §23 as originally written).
+
+**Reasoning:** the original off-grid system (PV+wind+battery, no backup) treats reliability as a
+hard constraint — a scenario either has a battery capacity meeting the LPSP target within the
+search range, or it is labelled infeasible and excluded from the ML training population entirely
+(this excluded roughly 58-61% of sampled scenarios at industrial scale, Addendum 2). A diesel
+generator, sized on power rather than energy, removes that hard constraint and reframes the
+question as economic: given diesel always available as backstop, what battery capacity minimizes
+total system LCOE? This is a more direct match to this project's own stated overarching goal
+("optimize the battery capacity suitable for the system design, economically feasible") and to
+OptiCE's own dual-objective framing (minimize LCOE / maximize renewable share).
+
+**What changed:**
+- **System boundary:** PV+wind+battery+diesel hybrid, not pure off-grid. Diesel rated power is
+  fixed at `1.25 * peak_load_kw` (`src/physics/diesel.py::diesel_rated_power_kw`), matching
+  OptiCE's own `Diesel_rated_power` convention exactly, not treated as a decision variable.
+- **Diesel model:** HOMER's standard linear fuel curve (F0=0.08145, F1=0.246 L/hr/kW, widely-cited
+  defaults), fuel price ~0.90 EUR/L (~7 CNY/L, China 2023-2024 average), installed cost ~650
+  EUR/kW (industrial genset range) — all documented modelling/economic assumptions, not official
+  quotes, same status as every other cost figure in `config/jinan.yaml`.
+- **PV and wind now have cost models** (`installed_cost_eur_per_kwp`/`installed_cost_eur_per_kw`
+  in `config/jinan.yaml`), ~700 and ~1,200 EUR/kW respectively (2024 utility-scale benchmarks) —
+  previously absent, since only battery capacity was ever being optimized/costed.
+- **Mechanistic optimization objective:** `src/physics/optimization.py::run_battery_search` now
+  selects the battery capacity minimizing `system_lcoe_eur_per_kwh` (PV+wind+battery+diesel
+  capital/O&M/fuel, per kWh served) across the full 0..n_max candidate range, not the smallest
+  battery meeting a hard LPSP constraint. LPSP and renewable share remain as *reported* metrics.
+- **Feasibility is now near-universal by mathematical construction:** because diesel's rated power
+  (`1.25 * peak_load_kw`) always exceeds every individual hour's load, diesel alone can serve 100%
+  of demand at any battery capacity — "infeasible" is only reachable again with a deliberately
+  undersized diesel (`sizing_factor < 1.0`), which does not occur under the documented default and
+  is covered by its own explicit test (`tests/test_optimization.py::
+  test_undersized_diesel_can_be_genuinely_infeasible`) specifically to confirm the guard is not
+  dead code.
+- **ML target reframed:** `optimal_capacity_kwh` now means "the LCOE-minimizing battery capacity,"
+  not "the smallest battery meeting the LPSP target." `reference_system_lcoe_eur_per_kwh` and
+  `reference_renewable_share` are new label fields (added to `LEAKAGE_COLUMNS`,
+  `src/ai/features.py`). Because scenarios are no longer excluded for being LPSP-infeasible, the
+  usable training population is now close to the full sampled dataset, not ~40%.
+- **Physical verification (Stage 7) reframed:** instead of a binary reliability pass/fail, it now
+  reports how much extra system LCOE results from installing the AI's predicted battery capacity
+  instead of the true LCOE-minimizing one — a direct, continuous measure of "how economically
+  costly is trusting the AI's answer," which is a closer match to this project's stated goal than
+  a binary pass/fail was.
+- **New required figure:** renewable share (%) vs. system LCOE ($/kWh), swept across the full
+  battery-candidate range for the baseline case, reproducing the shape of the course lecture's
+  "Typical results (1)" chart directly from this project's own exhaustive search output.
+
+**What did NOT change:** PV/wind generation physics, the battery SOC dispatch model itself
+(`run_dispatch`'s numba-optimized core is untouched), the ML pipeline's architecture (features,
+splitting, baselines, neural network), or the general reminders in §1.6 (test the hypothesis,
+don't assume the NN wins, report negative results honestly, grouped/temporal splits, no leakage).
+
+**Disposition of the pre-diesel industrial-scale results (Addendum 2):** superseded in the live
+repository, not deleted — fully recoverable from git history. The technical report's Related Work
+and Limitations sections remain valid; the OptiCE comparison in Related Work is, if anything, more
+directly applicable now that this project's own dispatch/economics structure mirrors OptiCE's
+Battery.m / Operational_strategy_battery.m / Power_lcc_diesel_generator.m separation explicitly.
+
 ---
 
 ## PART 2: ORIGINAL DETAILED SPECIFICATION (canonical technical reference)
