@@ -309,8 +309,9 @@ def plot_feasibility_counts(scenarios: pd.DataFrame) -> plt.Figure:
     category (PROJECT_BRIEF.md §27, figure 14)."""
     n_feasible = int(scenarios["feasible"].sum())
     infeasible = scenarios.loc[~scenarios["feasible"]]
-    n_renewable_inadequate = int(infeasible["infeasibility_reason"].str.contains("Renewable-generation", na=False).sum())
-    n_battery_range = int(infeasible["infeasibility_reason"].str.contains("Battery-range", na=False).sum())
+    reasons = infeasible["infeasibility_reason"].astype("string")
+    n_renewable_inadequate = int(reasons.str.contains("Renewable-generation", na=False).sum())
+    n_battery_range = int(reasons.str.contains("Battery-range", na=False).sum())
 
     labels = ["Feasible", "Infeasible:\nrenewable inadequacy", "Infeasible:\nbattery-range"]
     counts = [n_feasible, n_renewable_inadequate, n_battery_range]

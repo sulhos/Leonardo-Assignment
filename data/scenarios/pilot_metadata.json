@@ -37,7 +37,7 @@
     ],
     "max_combined_pv_wind_capacity_kw": 5000
   },
-  "last_run_new_scenarios": 100,
-  "last_run_seconds": 22.200371064000137,
+  "last_run_new_scenarios": 0,
+  "last_run_seconds": 2.2700000954500865e-06,
   "last_run_parallel": false
 }
