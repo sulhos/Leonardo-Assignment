@@ -77,6 +77,50 @@ def test_check_scenario_consistency_rejects_invalid_values(field: str, value: fl
     assert not is_consistent
 
 
+def test_check_scenario_consistency_no_cap_by_default() -> None:
+    # Without max_combined_pv_wind_capacity_kw, any positive PV+wind combo
+    # is accepted (residential-style config, no cap configured).
+    scenario = _valid_scenario()
+    scenario["pv_capacity_kwp"] = 3000.0
+    scenario["wind_capacity_kw"] = 3000.0
+    is_consistent, _ = check_scenario_consistency(scenario)
+    assert is_consistent
+
+
+def test_check_scenario_consistency_rejects_over_combined_cap() -> None:
+    scenario = _valid_scenario()
+    scenario["pv_capacity_kwp"] = 3000.0
+    scenario["wind_capacity_kw"] = 2500.0  # combined 5500 > 5000 cap
+    is_consistent, reason = check_scenario_consistency(scenario, max_combined_pv_wind_capacity_kw=5000.0)
+    assert not is_consistent
+    assert "Combined PV+wind capacity" in reason
+
+
+def test_check_scenario_consistency_accepts_under_combined_cap() -> None:
+    scenario = _valid_scenario()
+    scenario["pv_capacity_kwp"] = 1800.0
+    scenario["wind_capacity_kw"] = 800.0  # combined 2600 < 5000 cap
+    is_consistent, reason = check_scenario_consistency(scenario, max_combined_pv_wind_capacity_kw=5000.0)
+    assert is_consistent
+    assert reason is None
+
+
+def test_sample_scenarios_respects_combined_pv_wind_cap() -> None:
+    industrial_ranges = {
+        "pv_capacity_kwp": [500, 3500],
+        "wind_capacity_kw": [200, 2000],
+        "annual_load_kwh": [3_000_000, 21_000_000],
+        "peak_load_kw": [500, 4200],
+        "reliability_target_load_served": [0.990, 0.999],
+        "round_trip_efficiency": [0.88, 0.97],
+        "usable_soc_window_fraction": [0.70, 0.90],
+        "max_combined_pv_wind_capacity_kw": 5000,
+    }
+    scenarios = sample_scenarios(15, industrial_ranges, 42, "jinan", "Asia/Shanghai", 2023)
+    for s in scenarios:
+        assert s["pv_capacity_kwp"] + s["wind_capacity_kw"] <= 5000
+
+
 def test_sample_scenarios_reproducible_with_same_seed() -> None:
     a = sample_scenarios(10, RANGES, 42, "jinan", "Asia/Shanghai", 2023)
     b = sample_scenarios(10, RANGES, 42, "jinan", "Asia/Shanghai", 2023)

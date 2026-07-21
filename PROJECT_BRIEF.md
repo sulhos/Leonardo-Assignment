@@ -100,6 +100,56 @@ formula is computed or reported, so the comparison isn't accidentally overstated
 - Commands should work from the project root; use YAML config, type hints, logging (not print),
   fixed seeds, pathlib.
 
+### 1.7 Addendum 2: pivot from residential to industrial scale (post-completion)
+
+Produced after the Core scope (Stages 1-7) *and* both stretch-goal items (Stage 8/9 full
+5,000-scenario dataset, full-scale ML comparison) were already complete, tested, and written up
+in `reports/technical_report.md`. This addendum records a deliberate scope pivot decided in
+conversation, not a course-correction to an incomplete build. It takes precedence over §1.1-§1.6
+and Part 2 wherever they assumed a residential deployment context.
+
+**Reasoning:** wind generation is a difficult economic case to justify for a single residential
+site (small load, small rooftop-scale system, wind's higher balance-of-system cost per kW relative
+to PV does not amortize well at that scale). Moving the deployment context to an industrial
+facility makes the PV+wind+battery combination a more defensible investment case, without
+changing the project's core research question (mechanistic vs. neural-network battery sizing).
+
+**What changed:**
+- **Deployment context:** residential → industrial facility, same site (Jinan, 2023 weather;
+  Västerås remains the unattempted geographic-transfer stretch goal, unchanged).
+- **System scale cap:** combined PV + wind nameplate capacity ≤ 5,000 kW (enforced as a sampling
+  consistency check, `src/scenarios/sampling.py::check_scenario_consistency`, not just a range
+  bound — the individual PV/wind ranges can independently produce combinations that exceed it).
+- **Load profile:** a new `industrial_baseline` profile family
+  (`src/physics/load_profile.py`), alongside (not replacing) `residential_baseline`. Assumes a
+  shift-based facility: flatter day (two-shift operation, elevated overnight baseline rather than
+  a deep residential-style trough), a substantial weekend reduction (~45% of weekday level,
+  skeleton-crew/maintenance operation — this is a modelling assumption; a continuous-process
+  facility would look different), and a much weaker seasonal swing than residential
+  heating/cooling (process loads are largely weather-insensitive).
+- **Battery module:** rescaled from a small residential wall-mount unit (15.36 kWh) to a
+  containerized C&I/industrial block (250 kWh, 0.5C / 125 kW rated power), with the exhaustive
+  search range widened from 0-30 to 0-80 modules (0-20,000 kWh) to remain a meaningful search at
+  this scale. Installed cost assumption reduced from 550 to 300 EUR/kWh to reflect industrial/C&I
+  economies of scale (still a modelling assumption, not a price quote).
+- **Scenario-generation ranges** (`config/scenario_generation.yaml`): PV 500-3,500 kWp, wind
+  200-2,000 kW, peak load 500-4,200 kW, annual load 3,000,000-21,000,000 kWh — chosen so the
+  `industrial_baseline` shape's natural load factor (~0.6) keeps most sampled combinations
+  physically achievable without excessive resampling (verified empirically before committing to
+  these ranges, same practice as the original residential ranges).
+
+**What did NOT change:** the mechanistic models themselves (PV/wind physics, dispatch, LPSP
+search, economics), the ML pipeline (features, splitting, baselines, neural network architecture,
+physical verification), the research questions, or the addendum's general reminders (§1.6) — all
+still apply unchanged to the industrial case.
+
+**Disposition of the completed residential-scale work:** superseded in the live repository
+(config files, scenario datasets, trained models, figures, tables, and the technical report are
+overwritten with industrial-scale results), not deleted — the residential-scale results remain
+fully recoverable from git history if needed. The technical report's Related Work and Limitations
+sections, and the OptiCE comparison within them, remain valid for the industrial case and were not
+tied to the residential framing specifically.
+
 ---
 
 ## PART 2: ORIGINAL DETAILED SPECIFICATION (canonical technical reference)

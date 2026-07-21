@@ -34,7 +34,9 @@ logger = logging.getLogger(__name__)
 MAX_RESAMPLE_ATTEMPTS = 50
 
 
-def check_scenario_consistency(scenario: dict) -> tuple[bool, str | None]:
+def check_scenario_consistency(
+    scenario: dict, max_combined_pv_wind_capacity_kw: float | None = None,
+) -> tuple[bool, str | None]:
     """Return (is_consistent, reason_if_not) for one sampled scenario.
 
     Checks:
@@ -42,6 +44,11 @@ def check_scenario_consistency(scenario: dict) -> tuple[bool, str | None]:
     - The requested peak_load_kw can actually support annual_load_kwh for
       the implemented load-profile shape (verified by actually attempting
       generation, not an approximate bound).
+    - If `max_combined_pv_wind_capacity_kw` is given (industrial-scale pivot,
+      PROJECT_BRIEF.md Addendum 2), PV + wind nameplate capacity does not
+      exceed it. This is a per-technology-range-independent check: the union
+      of the individual pv_capacity_kwp/wind_capacity_kw ranges can exceed
+      this cap even when each range is individually valid.
     """
     if scenario["pv_capacity_kwp"] <= 0:
         return False, "pv_capacity_kwp must be positive."
@@ -57,6 +64,13 @@ def check_scenario_consistency(scenario: dict) -> tuple[bool, str | None]:
         return False, "round_trip_efficiency must be in (0, 1]."
     if not (0.0 < scenario["usable_soc_window_fraction"] < 1.0):
         return False, "usable_soc_window_fraction must be in (0, 1)."
+    if max_combined_pv_wind_capacity_kw is not None:
+        combined = scenario["pv_capacity_kwp"] + scenario["wind_capacity_kw"]
+        if combined > max_combined_pv_wind_capacity_kw:
+            return False, (
+                f"Combined PV+wind capacity {combined:.1f} kW exceeds "
+                f"max_combined_pv_wind_capacity_kw={max_combined_pv_wind_capacity_kw:.1f}."
+            )
 
     try:
         generate_load_profile(
@@ -88,6 +102,9 @@ def sample_scenarios(
             wind_capacity_kw, annual_load_kwh, peak_load_kw,
             reliability_target_load_served, round_trip_efficiency,
             usable_soc_window_fraction (matches `config/scenario_generation.yaml`).
+            May also include a scalar `max_combined_pv_wind_capacity_kw`
+            (industrial-scale pivot, PROJECT_BRIEF.md Addendum 2); omitted
+            or `None` means no combined-capacity cap is enforced.
         random_seed: Base seed; each scenario gets a derived, reproducible
             per-scenario seed (`random_seed * 100_003 + scenario_id`).
         location: Fixed site name for this dataset (single-location pilot).
@@ -119,7 +136,9 @@ def sample_scenarios(
                 "round_trip_efficiency": float(rng.uniform(*ranges["round_trip_efficiency"])),
                 "usable_soc_window_fraction": float(rng.uniform(*ranges["usable_soc_window_fraction"])),
             }
-            is_consistent, reason = check_scenario_consistency(candidate)
+            is_consistent, reason = check_scenario_consistency(
+                candidate, max_combined_pv_wind_capacity_kw=ranges.get("max_combined_pv_wind_capacity_kw")
+            )
             if is_consistent:
                 accepted = candidate
                 break

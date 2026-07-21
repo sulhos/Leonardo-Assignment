@@ -1,5 +1,9 @@
-# Baseline site configuration: Jinan, China.
-# All values here are the project's baseline defaults (PROJECT_BRIEF.md §4-§6).
+# Baseline site configuration: Jinan, China -- INDUSTRIAL scale.
+# All values here are the project's baseline defaults (PROJECT_BRIEF.md §4-§6),
+# rescaled for the industrial-scale pivot (PROJECT_BRIEF.md Addendum 2, decided
+# after the original residential-scale project was already complete: wind
+# generation is a harder economic case to justify for a single residential
+# site than for an industrial facility with a genuine multi-MW load).
 # This file is consumed by src/config.py; no module should hard-code these values.
 
 site:
@@ -14,13 +18,13 @@ simulation:
   expected_hourly_records: 8760  # non-leap local year
 
 load:
-  target_annual_kwh: 30000
-  max_hourly_kw: 15
-  profile_family: residential_baseline
+  target_annual_kwh: 12000000      # 12 GWh/year -- industrial facility, midpoint of scenario_generation.yaml's sampling range
+  max_hourly_kw: 2500              # implied load factor ~0.55, consistent with the industrial_baseline profile shape
+  profile_family: industrial_baseline
   random_seed: 42
 
 pv:
-  capacity_kwp: 20.0
+  capacity_kwp: 1800.0
   # tilt/azimuth are modelling assumptions, not manufacturer specs. Tilt uses the
   # common latitude-tilt heuristic (tilt_deg ~= |latitude|), a widely used simple
   # rule of thumb for a fixed-tilt array optimizing roughly for annual yield --
@@ -31,8 +35,8 @@ pv:
   inverter_efficiency: 0.96
 
 wind:
-  rated_power_kw: 10.0
-  hub_height_m: 15.0
+  rated_power_kw: 800.0
+  hub_height_m: 60.0   # utility-class turbine tower height (industrial scale; was 15 m for the residential small-turbine assumption)
   wind_shear_exponent: 0.14  # generic open-terrain default; document limitation in report
   cut_in_mps: 2.5
   rated_mps: 11.0
@@ -43,19 +47,19 @@ wind:
 
 battery:
   chemistry: LFP
-  module_capacity_kwh: 15.36       # manufacturer spec (BYD Battery-Box Premium LVL-style)
-  module_rated_power_kw: 12.8      # manufacturer spec
-  round_trip_efficiency: 0.95      # manufacturer spec (approximate)
+  module_capacity_kwh: 250.0       # containerized industrial/C&I BESS block, not a residential wall-mount unit
+  module_rated_power_kw: 125.0     # 0.5C -- a common commercial BESS duration assumption, modelling assumption not a manufacturer spec
+  round_trip_efficiency: 0.95      # manufacturer spec (approximate), unchanged by scale
   min_soc_fraction: 0.10           # modelling assumption
   max_soc_fraction: 0.95           # modelling assumption
   initial_soc_fraction: 0.50       # modelling assumption
   economic_lifetime_years: 10      # economic assumption
   project_lifetime_years: 20       # economic assumption
-  installed_cost_eur_per_kwh: 550  # economic assumption — NOT an official BYD retail price
-  cost_sensitivity_eur_per_kwh: [400, 550, 700]
+  installed_cost_eur_per_kwh: 300  # economic assumption reflecting C&I/utility-scale economies vs. the residential 550 EUR/kWh figure -- NOT an official price quote
+  cost_sensitivity_eur_per_kwh: [220, 300, 400]
   candidate_module_counts:
     min: 0
-    max: 30
+    max: 80   # 0-20,000 kWh; rescaled from the residential project's 0-30 (0-460.8 kWh) range
   temperature_derating:
     enabled: false  # optional feature; controlled/enclosure temperature assumed initially
     charge_derating_threshold_c: null
