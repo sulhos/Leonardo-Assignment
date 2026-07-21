@@ -2,26 +2,26 @@
   "dataset_name": "pilot",
   "n_scenarios_requested": 100,
   "random_seed": 42,
-  "config_hash": "e39898016eb1ec49",
+  "config_hash": "b69ee25c2fa1be30",
   "location": "jinan",
   "weather_year": 2023,
-  "n_max": 30,
+  "n_max": 80,
   "ranges": {
     "pv_capacity_kwp": [
-      10,
-      40
+      500,
+      3500
     ],
     "wind_capacity_kw": [
-      5,
-      25
+      200,
+      2000
     ],
     "annual_load_kwh": [
-      10000,
-      50000
+      1200000,
+      6500000
     ],
     "peak_load_kw": [
-      5,
-      20
+      250,
+      1300
     ],
     "reliability_target_load_served": [
       0.99,
@@ -34,8 +34,10 @@
     "usable_soc_window_fraction": [
       0.7,
       0.9
-    ]
+    ],
+    "max_combined_pv_wind_capacity_kw": 5000
   },
-  "last_run_new_scenarios": 0,
-  "last_run_seconds": 2.302599995118726e-05
+  "last_run_new_scenarios": 100,
+  "last_run_seconds": 426.872535985,
+  "last_run_parallel": false
 }
