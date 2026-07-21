@@ -2,6 +2,7 @@
 numpy>=1.26
 pandas>=2.2
 scipy>=1.12
+numba>=0.60  # JIT-compiles the hourly dispatch loop (src/physics/dispatch.py); ~40x faster, bit-identical output
 
 # Weather / solar / wind modelling
 requests>=2.31
