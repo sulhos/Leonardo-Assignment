@@ -164,7 +164,17 @@ def verify_predictions(
 
         diesel_cfg = site_config["diesel"]
         diesel = DieselSpec(
-            rated_power_kw=diesel_rated_power_kw(float(scenario["peak_load_kw"]), diesel_cfg["sizing_factor"]),
+            # Sized from the just-regenerated load's ACHIEVED peak (load.max()),
+            # not scenario["peak_load_kw"] (the original request) -- matching
+            # src.physics.optimization.run_battery_search's own convention
+            # exactly. These can differ by a tiny floating-point rescaling
+            # (see the docstring note above), and since both candidates below
+            # share this one DieselSpec, any mismatch versus the ORIGINAL
+            # search's diesel sizing would make "reference" no longer
+            # guaranteed optimal under this function's own re-evaluation --
+            # observed as small negative extra_system_lcoe_eur_per_kwh values
+            # before this fix.
+            rated_power_kw=diesel_rated_power_kw(float(load.max()), diesel_cfg["sizing_factor"]),
             fuel_curve_intercept_l_per_kwh_rated=diesel_cfg["fuel_curve_intercept_l_per_kwh_rated"],
             fuel_curve_slope_l_per_kwh_output=diesel_cfg["fuel_curve_slope_l_per_kwh_output"],
             fuel_price_eur_per_l=diesel_cfg["fuel_price_eur_per_l"],

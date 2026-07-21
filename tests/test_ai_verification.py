@@ -15,6 +15,10 @@ from src.ai.physical_verification import (
     summarize_verification,
     verify_predictions,
 )
+from src.physics.optimization import run_battery_search
+from src.physics.load_profile import generate_load_profile
+from src.physics.pv_model import compute_pv_generation
+from src.physics.wind_model import compute_wind_generation
 
 MODULE_CAPACITY_KWH = 15.36
 
@@ -174,6 +178,67 @@ def test_verify_predictions_extra_lcoe_nonzero_when_prediction_differs() -> None
     result = verify_predictions(scenarios, predicted, weather, SITE_CONFIG, MODULE_CAPACITY_KWH)
 
     assert result.loc[0, "extra_system_lcoe_eur_per_kwh"] != pytest.approx(0.0, abs=1e-9)
+
+
+def test_verify_predictions_extra_lcoe_never_meaningfully_negative_vs_true_optimum() -> None:
+    # Regression test for the diesel-sizing mismatch fixed above: diesel must
+    # be sized from the load's ACHIEVED peak (load.max()), matching
+    # run_battery_search's own convention exactly, not the scenario's
+    # requested peak_load_kw -- otherwise "reference" is not guaranteed
+    # optimal under this function's own re-evaluation, and predictions can
+    # spuriously look cheaper than the true optimum by a small negative
+    # extra_system_lcoe_eur_per_kwh.
+    weather = _synthetic_full_year_weather()
+    scenario_inputs = dict(
+        pv_capacity_kwp=25.0, wind_capacity_kw=12.0, annual_load_kwh=28000.0, peak_load_kw=12.0,
+        weather_year=2023, timezone="Asia/Shanghai", random_seed=42,
+    )
+    load = generate_load_profile(
+        annual_consumption_kwh=scenario_inputs["annual_load_kwh"], peak_load_kw=scenario_inputs["peak_load_kw"],
+        year=scenario_inputs["weather_year"], timezone=scenario_inputs["timezone"], random_seed=scenario_inputs["random_seed"],
+    )
+    pv = compute_pv_generation(
+        weather=weather, capacity_kwp=scenario_inputs["pv_capacity_kwp"],
+        latitude=SITE_CONFIG["site"]["latitude"], longitude=SITE_CONFIG["site"]["longitude"],
+        tilt_deg=SITE_CONFIG["pv"]["tilt_deg"], azimuth_deg=SITE_CONFIG["pv"]["azimuth_deg"],
+        system_losses_fraction=SITE_CONFIG["pv"]["system_losses_fraction"], inverter_efficiency=SITE_CONFIG["pv"]["inverter_efficiency"],
+    )
+    wind = compute_wind_generation(
+        weather=weather, rated_power_kw=scenario_inputs["wind_capacity_kw"],
+        reference_height_m=SITE_CONFIG["wind"]["weather_reference_height_m"], hub_height_m=SITE_CONFIG["wind"]["hub_height_m"],
+        shear_exponent=SITE_CONFIG["wind"]["wind_shear_exponent"], cut_in_mps=SITE_CONFIG["wind"]["cut_in_mps"],
+        rated_mps=SITE_CONFIG["wind"]["rated_mps"], cut_out_mps=SITE_CONFIG["wind"]["cut_out_mps"],
+    )
+    search_result = run_battery_search(
+        pv, wind, load, n_max=25,
+        module_capacity_kwh=MODULE_CAPACITY_KWH, module_rated_power_kw=SITE_CONFIG["battery"]["module_rated_power_kw"],
+        round_trip_efficiency=0.95, min_soc_fraction=0.075, max_soc_fraction=0.925,
+        initial_soc_fraction=SITE_CONFIG["battery"]["initial_soc_fraction"],
+        installed_cost_eur_per_kwh=SITE_CONFIG["battery"]["installed_cost_eur_per_kwh"],
+        economic_lifetime_years=SITE_CONFIG["battery"]["economic_lifetime_years"],
+        project_lifetime_years=SITE_CONFIG["battery"]["project_lifetime_years"],
+        real_discount_rate=SITE_CONFIG["economics"]["real_discount_rate"],
+        pv_capacity_kwp=scenario_inputs["pv_capacity_kwp"], pv_cfg=SITE_CONFIG["pv"],
+        wind_capacity_kw=scenario_inputs["wind_capacity_kw"], wind_cfg=SITE_CONFIG["wind"],
+        diesel_cfg=SITE_CONFIG["diesel"], lpsp_target=0.01,
+    )
+
+    scenarios = pd.DataFrame([{
+        **scenario_inputs,
+        "scenario_id": 0,
+        "reliability_target_load_served": 0.99,
+        "round_trip_efficiency": 0.95,
+        "usable_soc_window_fraction": 0.85,
+        "optimal_n_modules": search_result.optimal_n_modules,
+        "optimal_capacity_kwh": search_result.optimal_capacity_kwh,
+    }])
+
+    # Sweep predictions across the whole searched range; none should ever
+    # look cheaper than the true optimum by more than floating-point noise.
+    for n_modules in range(0, 26, 5):
+        predicted = pd.Series([n_modules * MODULE_CAPACITY_KWH], index=scenarios.index)
+        result = verify_predictions(scenarios, predicted, weather, SITE_CONFIG, MODULE_CAPACITY_KWH)
+        assert result.loc[0, "extra_system_lcoe_eur_per_kwh"] >= -1e-9
 
 
 def test_summarize_verification_aggregates() -> None:
