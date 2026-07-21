@@ -497,3 +497,22 @@ def plot_cost_penalty_from_oversizing(summary_by_model: dict[str, dict]) -> plt.
     ax.set_title("Cost Penalty from AI Oversizing")
     fig.tight_layout()
     return fig
+
+
+def plot_extra_lcoe_by_model(summary_by_model: dict[str, dict]) -> plt.Figure:
+    """Mean extra system LCOE incurred from installing each model's predicted
+    battery capacity instead of the true LCOE-minimizing one (PROJECT_BRIEF.md
+    Addendum 3's headline Stage 7 result, figure 29) -- the diesel-backed
+    reframing of "how costly is trusting the AI's answer" as a continuous
+    economic measure rather than a binary reliability pass/fail."""
+    model_names = list(summary_by_model.keys())
+    extra_lcoe = [summary_by_model[m]["mean_extra_system_lcoe_eur_per_kwh"] for m in model_names]
+
+    fig, ax = plt.subplots(figsize=(2 + 1.5 * len(model_names), 5))
+    bars = ax.bar(model_names, extra_lcoe, color="firebrick")
+    for bar, value in zip(bars, extra_lcoe):
+        ax.text(bar.get_x() + bar.get_width() / 2, value, f"{value:.4f}", ha="center", va="bottom")
+    ax.set_ylabel("Mean extra system LCOE vs. optimal (EUR/kWh)")
+    ax.set_title("Physical Verification: Extra System LCOE from Trusting the AI")
+    fig.tight_layout()
+    return fig

@@ -56,11 +56,17 @@ def _synthetic_full_year_weather() -> pd.DataFrame:
 
 SITE_CONFIG = {
     "site": {"latitude": 36.65, "longitude": 117.12, "timezone": "Asia/Shanghai"},
-    "pv": {"tilt_deg": 36.65, "azimuth_deg": 180.0, "system_losses_fraction": 0.14, "inverter_efficiency": 0.96},
+    "pv": {"tilt_deg": 36.65, "azimuth_deg": 180.0, "system_losses_fraction": 0.14, "inverter_efficiency": 0.96,
+           "installed_cost_eur_per_kwp": 700, "economic_lifetime_years": 25, "om_cost_fraction_per_year": 0.015},
     "wind": {"weather_reference_height_m": 10.0, "hub_height_m": 15.0, "wind_shear_exponent": 0.14,
-             "cut_in_mps": 2.5, "rated_mps": 11.0, "cut_out_mps": 25.0},
+             "cut_in_mps": 2.5, "rated_mps": 11.0, "cut_out_mps": 25.0,
+             "installed_cost_eur_per_kw": 1200, "economic_lifetime_years": 20, "om_cost_fraction_per_year": 0.025},
     "battery": {"module_capacity_kwh": MODULE_CAPACITY_KWH, "module_rated_power_kw": 12.8, "initial_soc_fraction": 0.5,
                 "installed_cost_eur_per_kwh": 550, "economic_lifetime_years": 10, "project_lifetime_years": 20},
+    "diesel": {"sizing_factor": 1.25, "fuel_curve_intercept_l_per_kwh_rated": 0.08145,
+               "fuel_curve_slope_l_per_kwh_output": 0.246, "fuel_price_eur_per_l": 0.9,
+               "installed_cost_eur_per_kw": 650, "om_cost_fraction_per_year": 0.03,
+               "economic_lifetime_years": 15, "project_lifetime_years": 20},
     "economics": {"real_discount_rate": 0.05},
 }
 
@@ -112,11 +118,12 @@ def test_verify_predictions_flags_undersizing_and_oversizing_correctly() -> None
     assert result.loc[1, "oversized"] and not result.loc[1, "undersized"]
 
 
-def test_verify_predictions_reliability_pass_reflects_own_target() -> None:
+def test_verify_predictions_reliability_near_universal_with_diesel_backup() -> None:
+    # PROJECT_BRIEF.md Addendum 3: diesel (default sizing_factor=1.25 * peak
+    # load) covers any residual deficit regardless of battery size, so even a
+    # tiny 1-module prediction should still satisfy reliability -- reliability
+    # is no longer the discriminating question, extra system LCOE is.
     weather = _synthetic_full_year_weather()
-    # A tiny battery (1 module) against a demanding scenario should fail
-    # reliability; a generous battery (30 modules, well above what 25kWp PV +
-    # 12kW wind + 28 MWh load needs) should pass.
     scenarios = pd.DataFrame([
         _scenario_row(scenario_id=0, optimal_n_modules=20),
         _scenario_row(scenario_id=1, optimal_n_modules=20),
@@ -125,8 +132,48 @@ def test_verify_predictions_reliability_pass_reflects_own_target() -> None:
 
     result = verify_predictions(scenarios, predicted, weather, SITE_CONFIG, MODULE_CAPACITY_KWH)
 
-    assert result.loc[0, "reliability_pass"] == False  # noqa: E712 (explicit bool check reads clearer here)
+    assert result.loc[0, "reliability_pass"] == True  # noqa: E712
     assert result.loc[1, "reliability_pass"] == True  # noqa: E712
+
+
+def test_verify_predictions_genuinely_infeasible_with_undersized_diesel() -> None:
+    # The reliability guard is not dead code: an explicitly undersized
+    # diesel (sizing_factor < 1.0) can still fail reliability for a tiny
+    # battery prediction, same boundary case as
+    # tests/test_optimization.py::test_undersized_diesel_can_be_genuinely_infeasible.
+    undersized_diesel_config = {**SITE_CONFIG, "diesel": {**SITE_CONFIG["diesel"], "sizing_factor": 0.1}}
+    weather = _synthetic_full_year_weather()
+    scenarios = pd.DataFrame([_scenario_row(scenario_id=0, optimal_n_modules=20, reliability_target=0.999)])
+    predicted = pd.Series([1 * MODULE_CAPACITY_KWH], index=scenarios.index)
+
+    result = verify_predictions(scenarios, predicted, weather, undersized_diesel_config, MODULE_CAPACITY_KWH)
+
+    assert result.loc[0, "reliability_pass"] == False  # noqa: E712
+
+
+def test_verify_predictions_extra_lcoe_zero_when_prediction_matches_reference() -> None:
+    # Identical module count -> identical dispatch -> identical system LCOE,
+    # regardless of whether that count is actually the true LCOE optimum.
+    weather = _synthetic_full_year_weather()
+    scenarios = pd.DataFrame([_scenario_row(scenario_id=0, optimal_n_modules=20)])
+    predicted = pd.Series([20 * MODULE_CAPACITY_KWH], index=scenarios.index)
+
+    result = verify_predictions(scenarios, predicted, weather, SITE_CONFIG, MODULE_CAPACITY_KWH)
+
+    assert result.loc[0, "extra_system_lcoe_eur_per_kwh"] == pytest.approx(0.0, abs=1e-9)
+    assert result.loc[0, "verified_system_lcoe_eur_per_kwh"] == pytest.approx(
+        result.loc[0, "reference_system_lcoe_eur_per_kwh"]
+    )
+
+
+def test_verify_predictions_extra_lcoe_nonzero_when_prediction_differs() -> None:
+    weather = _synthetic_full_year_weather()
+    scenarios = pd.DataFrame([_scenario_row(scenario_id=0, optimal_n_modules=20)])
+    predicted = pd.Series([1 * MODULE_CAPACITY_KWH], index=scenarios.index)
+
+    result = verify_predictions(scenarios, predicted, weather, SITE_CONFIG, MODULE_CAPACITY_KWH)
+
+    assert result.loc[0, "extra_system_lcoe_eur_per_kwh"] != pytest.approx(0.0, abs=1e-9)
 
 
 def test_summarize_verification_aggregates() -> None:
@@ -137,10 +184,16 @@ def test_summarize_verification_aggregates() -> None:
         "excess_capacity_kwh": [-30.0, 20.0, -50.0, 0.0],
         "cost_difference_eur": [-1000.0, 500.0, -2000.0, 0.0],
         "curtailed_difference_kwh": [10.0, -5.0, 15.0, 0.0],
+        "extra_system_lcoe_eur_per_kwh": [0.01, 0.0, 0.05, 0.02],
+        "reference_system_lcoe_eur_per_kwh": [0.20, 0.20, 0.20, 0.20],
     })
     summary = summarize_verification(verification)
 
     assert summary["n_scenarios"] == 4
+    assert summary["mean_extra_system_lcoe_eur_per_kwh"] == pytest.approx(0.02)
+    assert summary["median_extra_system_lcoe_eur_per_kwh"] == pytest.approx(0.015)
+    assert summary["max_extra_system_lcoe_eur_per_kwh"] == pytest.approx(0.05)
+    assert summary["pct_within_5pct_of_optimal_lcoe"] == pytest.approx(0.5)  # 0.0 and 0.01 are within 5% of 0.20
     assert summary["pct_satisfying_reliability"] == pytest.approx(0.5)
     assert summary["pct_undersized"] == pytest.approx(0.5)
     assert summary["pct_oversized"] == pytest.approx(0.25)
