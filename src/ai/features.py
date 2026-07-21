@@ -37,6 +37,8 @@ LEAKAGE_COLUMNS = frozenset(
         "optimal_n_modules",
         "reference_lpsp",
         "reference_annualized_cost",
+        "reference_system_lcoe_eur_per_kwh",  # added for the diesel/system-LCOE pivot, PROJECT_BRIEF.md Addendum 3
+        "reference_renewable_share",
     }
 )
 

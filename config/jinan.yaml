@@ -40,6 +40,13 @@ pv:
   azimuth_deg: 180.0    # equator-facing default for northern hemisphere
   system_losses_fraction: 0.14  # placeholder PVWatts-style loss assumption; revisit in Stage 2
   inverter_efficiency: 0.96
+  # Added for the diesel/system-LCOE pivot (PROJECT_BRIEF.md Addendum 3): PV/wind
+  # previously had no cost model at all (only battery was ever being sized/costed).
+  # ~700 EUR/kW = 2024 global utility-scale weighted-average installed cost
+  # (IRENA-style figures, ~$691-779/kW); economic assumption, not a price quote.
+  installed_cost_eur_per_kwp: 700
+  economic_lifetime_years: 25   # typical PV module warranty/economic-life assumption
+  om_cost_fraction_per_year: 0.015  # ~1.5%/year of capital, standard O&M assumption
 
 wind:
   rated_power_kw: 1450.0  # bumped during Stage 3 recalibration, to push annual renewable coverage to ~111% (mirrors the residential baseline's coverage ratio; see load section note)
@@ -51,6 +58,13 @@ wind:
   # Confirmed via NASA POWER API validation (addendum §1.4, see data/README.md):
   # the hourly endpoint's WS10M parameter is used as the model input, at 10 m.
   weather_reference_height_m: 10
+  # Added for the diesel/system-LCOE pivot: ~1,200 EUR/kW, between utility-scale
+  # onshore wind's global weighted average (~1,000 EUR/kW, IRENA) and smaller
+  # commercial-scale systems' higher per-kW cost, since this project's wind range
+  # (200-2,000 kW) sits below utility wind-farm scale. Economic assumption.
+  installed_cost_eur_per_kw: 1200
+  economic_lifetime_years: 20   # typical turbine design-life assumption
+  om_cost_fraction_per_year: 0.025  # ~2.5%/year of capital, standard O&M assumption
 
 battery:
   chemistry: LFP
@@ -73,8 +87,33 @@ battery:
     discharge_derating_threshold_c: null
     thermal_management_load_kw: null
 
+# Diesel backup generator (PROJECT_BRIEF.md Addendum 3 -- Path B pivot from a
+# hard-reliability-constrained off-grid system to a diesel-backstopped hybrid
+# system, per the course lecture's OptiCE-style "renewable share vs LCOE"
+# framing). rated_power_kw is NOT set here -- it is computed per-scenario as
+# 1.25 * peak_load_kw (src/physics/diesel.py::diesel_rated_power_kw), matching
+# OptiCE's own Diesel_rated_power sizing rule exactly.
+diesel:
+  sizing_factor: 1.25  # rated_power_kw = sizing_factor * peak_load_kw
+  # HOMER's standard linear fuel curve (F(P) = F0*P_rated + F1*P_output),
+  # widely-cited default coefficients, L/hr/kW -- see src/physics/diesel.py.
+  fuel_curve_intercept_l_per_kwh_rated: 0.08145
+  fuel_curve_slope_l_per_kwh_output: 0.246
+  fuel_price_eur_per_l: 0.90  # ~7 CNY/L, China 2023-2024 average retail diesel price
+  installed_cost_eur_per_kw: 650  # industrial-scale genset installed-cost range ($675-1000/kW); economic assumption
+  om_cost_fraction_per_year: 0.03  # ~3%/year of capital, standard genset O&M assumption
+  economic_lifetime_years: 15   # typical diesel genset design-life assumption
+  project_lifetime_years: 20    # matches battery/PV/wind project lifetime
+
+# Reliability is now a REPORTED metric, not the battery-sizing objective
+# (PROJECT_BRIEF.md Addendum 3): diesel is sized by power (always >= peak
+# load), not energy, so it can in principle serve 100% of the load at any
+# battery capacity, making LPSP near-zero for every candidate by construction.
+# The primary objective is now `system_lcoe_eur_per_kwh` minimization
+# (src/physics/optimization.py). These targets remain as reported sensitivity
+# metrics, not feasibility gates.
 reliability:
-  primary_lpsp_target: 0.01  # >= 99% load served
+  primary_lpsp_target: 0.01  # >= 99% load served -- reported, not a search gate under Path B
   sensitivity_targets_load_served: [0.990, 0.995, 0.999]
 
 economics:

@@ -1,17 +1,26 @@
-"""Battery-system economic analysis (PROJECT_BRIEF.md §23).
+"""Generic capital-asset economic analysis (PROJECT_BRIEF.md §23).
 
-**Economic assumptions** (distinct from the battery's manufacturer
-specifications in `src/physics/battery.py`): `installed_cost_eur_per_kwh` is
-a configurable modelling input, not an official manufacturer retail price
-(PROJECT_BRIEF.md §5). `real_discount_rate` and the battery's
+Despite the historical module name, these functions are technology-agnostic:
+`present_value_cost`/`equivalent_annual_cost` are reused for PV, wind,
+battery, and the diesel generator's *capital* cost alike (all four now have
+an `installed_cost_eur_per_*` economic assumption, added for the diesel/
+system-LCOE pivot, PROJECT_BRIEF.md Addendum 3 -- previously only the
+battery had a cost model, since only battery capacity was ever being
+optimized).
+
+**Economic assumptions**: every `installed_cost_eur_per_*` value is a
+configurable modelling input, not an official manufacturer/vendor retail
+price (PROJECT_BRIEF.md §5). `real_discount_rate` and each technology's
 `economic_lifetime_years`/`project_lifetime_years` are likewise configurable
 assumptions, not measured quantities.
 
 Cost model: one initial investment at year 0, plus exactly one replacement
 at `economic_lifetime_years` (if that falls strictly within
 `project_lifetime_years`), both discounted to present value at
-`real_discount_rate`. No grid-import, grid-export, or fossil-fuel terms
-(off-grid, no backup generator system boundary, PROJECT_BRIEF.md §3, §23).
+`real_discount_rate`. This covers *capital* cost only -- diesel's fuel cost
+is a separate, purely annual operating cost with no present-value/
+replacement structure (`src/physics/diesel.py::diesel_annual_fuel_cost_eur`),
+since fuel is consumed continuously rather than replaced periodically.
 """
 
 from __future__ import annotations

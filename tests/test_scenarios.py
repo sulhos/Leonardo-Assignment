@@ -176,11 +176,17 @@ def _synthetic_full_year_weather() -> pd.DataFrame:
 
 SITE_CONFIG = {
     "site": {"latitude": 36.65, "longitude": 117.12, "timezone": "Asia/Shanghai"},
-    "pv": {"tilt_deg": 36.65, "azimuth_deg": 180.0, "system_losses_fraction": 0.14, "inverter_efficiency": 0.96},
+    "pv": {"tilt_deg": 36.65, "azimuth_deg": 180.0, "system_losses_fraction": 0.14, "inverter_efficiency": 0.96,
+           "installed_cost_eur_per_kwp": 700, "economic_lifetime_years": 25, "om_cost_fraction_per_year": 0.015},
     "wind": {"weather_reference_height_m": 10.0, "hub_height_m": 15.0, "wind_shear_exponent": 0.14,
-             "cut_in_mps": 2.5, "rated_mps": 11.0, "cut_out_mps": 25.0},
+             "cut_in_mps": 2.5, "rated_mps": 11.0, "cut_out_mps": 25.0,
+             "installed_cost_eur_per_kw": 1200, "economic_lifetime_years": 20, "om_cost_fraction_per_year": 0.025},
     "battery": {"module_capacity_kwh": 15.36, "module_rated_power_kw": 12.8, "initial_soc_fraction": 0.5,
                 "installed_cost_eur_per_kwh": 550, "economic_lifetime_years": 10, "project_lifetime_years": 20},
+    "diesel": {"sizing_factor": 1.25, "fuel_curve_intercept_l_per_kwh_rated": 0.08145,
+               "fuel_curve_slope_l_per_kwh_output": 0.246, "fuel_price_eur_per_l": 0.9,
+               "installed_cost_eur_per_kw": 650, "om_cost_fraction_per_year": 0.03,
+               "economic_lifetime_years": 15, "project_lifetime_years": 20},
     "economics": {"real_discount_rate": 0.05},
 }
 

@@ -96,6 +96,11 @@ def run_scenario(scenario: dict, site_config: dict, weather: pd.DataFrame, n_max
         economic_lifetime_years=battery_cfg["economic_lifetime_years"],
         project_lifetime_years=battery_cfg["project_lifetime_years"],
         real_discount_rate=site_config["economics"]["real_discount_rate"],
+        pv_capacity_kwp=scenario["pv_capacity_kwp"],
+        pv_cfg=pv_cfg,
+        wind_capacity_kw=scenario["wind_capacity_kw"],
+        wind_cfg=wind_cfg,
+        diesel_cfg=site_config["diesel"],
         lpsp_target=lpsp_target,
     )
 
@@ -104,12 +109,14 @@ def run_scenario(scenario: dict, site_config: dict, weather: pd.DataFrame, n_max
         "optimal_n_modules": search_result.optimal_n_modules,
         "optimal_capacity_kwh": search_result.optimal_capacity_kwh,
         "reference_lpsp": search_result.lpsp,
+        "reference_system_lcoe_eur_per_kwh": search_result.system_lcoe_eur_per_kwh,
+        "reference_renewable_share": search_result.renewable_share,
         "reference_annualized_cost": (
             search_result.candidates.loc[
                 search_result.candidates["n_modules"] == search_result.optimal_n_modules,
                 "equivalent_annual_cost_eur",
             ].iloc[0]
-            if search_result.feasible else None
+            if search_result.optimal_n_modules is not None else None
         ),
         "infeasibility_reason": search_result.infeasibility_reason,
         "mechanistic_optimization_runtime_seconds": search_result.search_runtime_seconds,
