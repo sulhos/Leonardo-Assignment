@@ -212,6 +212,68 @@ def plot_energy_flow_balance(dispatch_result: pd.DataFrame) -> plt.Figure:
     return fig
 
 
+def plot_renewable_share_vs_lcoe(candidates: pd.DataFrame, title: str = "Renewable Share vs. System LCOE") -> plt.Figure:
+    """Renewable share (%) vs. system LCOE (EUR/kWh), swept across battery
+    candidates (PROJECT_BRIEF.md Addendum 3). Reproduces the shape of the
+    course lecture's OptiCE "Typical results (1)" chart directly from this
+    project's own exhaustive battery search, using one fixed PV/wind
+    combination swept over battery capacity -- not OptiCE's own joint
+    PV/wind/battery genetic-algorithm sweep, a documented scope difference
+    (see `reports/technical_report.md`'s Related Work / Limitations)."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sorted_candidates = candidates.sort_values("nominal_battery_capacity_kwh")
+    ax.plot(
+        sorted_candidates["system_lcoe_eur_per_kwh"], sorted_candidates["renewable_share"] * 100,
+        marker="o", markersize=4, color="steelblue", linewidth=1.2,
+    )
+    ax.set_xlabel("System LCOE (EUR/kWh)")
+    ax.set_ylabel("Renewable share (%)")
+    ax.set_ylim(-2, 105)
+    ax.set_title(title)
+    fig.tight_layout()
+    return fig
+
+
+def plot_energy_flow_balance_with_diesel(dispatch_result_with_diesel: pd.DataFrame) -> plt.Figure:
+    """Annual energy-flow balance including diesel backup (PROJECT_BRIEF.md
+    Addendum 3): renewable-side (direct supply, battery charge, curtailed)
+    and load-side (direct supply, battery discharge, diesel, still-unserved)
+    totals, as two stacked bars. `dispatch_result_with_diesel` must already
+    have been through `src.physics.diesel.apply_diesel_backup`."""
+    renewable_flows = {
+        "Direct supply": dispatch_result_with_diesel["direct_supply_kwh"].sum(),
+        "Battery charge": dispatch_result_with_diesel["battery_charge_kwh"].sum(),
+        "Curtailed": dispatch_result_with_diesel["curtailed_kwh"].sum(),
+    }
+    load_flows = {
+        "Direct supply": dispatch_result_with_diesel["direct_supply_kwh"].sum(),
+        "Battery discharge": dispatch_result_with_diesel["battery_discharge_kwh"].sum(),
+        "Diesel": dispatch_result_with_diesel["diesel_output_kwh"].sum(),
+        "Still unserved": dispatch_result_with_diesel["still_unserved_kwh"].sum(),
+    }
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    colors = {"Direct supply": "seagreen", "Battery charge": "steelblue", "Curtailed": "lightgrey",
+              "Battery discharge": "orange", "Diesel": "dimgrey", "Still unserved": "firebrick"}
+
+    bottom = 0.0
+    for label, value in renewable_flows.items():
+        ax.bar("Renewable\nproduction", value, bottom=bottom, color=colors[label], label=label)
+        bottom += value
+
+    bottom = 0.0
+    for label, value in load_flows.items():
+        already_labeled = label in renewable_flows
+        ax.bar("Load", value, bottom=bottom, color=colors[label], label=None if already_labeled else label)
+        bottom += value
+
+    ax.set_ylabel("Annual energy (kWh)")
+    ax.set_title("Annual Energy-Flow Balance (with Diesel Backup)")
+    ax.legend(loc="upper right", bbox_to_anchor=(1.4, 1.0))
+    fig.tight_layout()
+    return fig
+
+
 def plot_scenario_input_distributions(scenarios: pd.DataFrame, columns: list[str]) -> plt.Figure:
     """Histogram grid of scenario input distributions (PROJECT_BRIEF.md §27, figure 12)."""
     n = len(columns)

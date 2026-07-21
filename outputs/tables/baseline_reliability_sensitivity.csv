@@ -1,4 +1,4 @@
 load_served_target,feasible,n_modules,capacity_kwh,achieved_lpsp
-0.99,False,,,
-0.995,False,,,
-0.999,False,,,
+0.99,True,0.0,0.0,0.0
+0.995,True,0.0,0.0,0.0
+0.999,True,0.0,0.0,0.0
