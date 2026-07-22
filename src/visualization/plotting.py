@@ -516,3 +516,45 @@ def plot_extra_lcoe_by_model(summary_by_model: dict[str, dict]) -> plt.Figure:
     ax.set_title("Physical Verification: Extra System LCOE from Trusting the AI")
     fig.tight_layout()
     return fig
+
+
+def plot_capacity_comparison_line(verification: pd.DataFrame, model_name: str) -> plt.Figure:
+    """Line comparison of mechanistic-reference vs. AI-predicted battery
+    capacity, one point per test scenario, sorted by the mechanistic
+    reference value (PROJECT_BRIEF.md Addendum 3). Complements the single-
+    number accuracy metrics (MAE, R^2) with a direct scenario-by-scenario
+    view of how closely the AI's installed capacity tracks the mechanistic
+    optimum across the full range of test scenarios, rather than the
+    mechanistic-only search curve (figure 27)."""
+    ordered = verification.sort_values("reference_capacity_kwh").reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(ordered.index, ordered["reference_capacity_kwh"], color="black", linewidth=1.5,
+            label="Mechanistic (reference)")
+    ax.plot(ordered.index, ordered["installed_capacity_kwh"], color="steelblue", linewidth=0.8, alpha=0.8,
+            label=f"{model_name} (predicted)")
+    ax.set_xlabel("Test scenarios, sorted by mechanistic reference capacity")
+    ax.set_ylabel("Battery capacity (kWh)")
+    ax.set_title(f"Battery Capacity: Mechanistic vs. {model_name}")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
+def plot_renewable_share_comparison_line(verification: pd.DataFrame, model_name: str) -> plt.Figure:
+    """Line comparison of mechanistic-reference vs. AI-predicted renewable
+    share, one point per test scenario, sorted by the mechanistic reference
+    value -- the AI-side counterpart to figure 28 (which is mechanistic-only),
+    computed by re-running dispatch at each model's own predicted battery
+    capacity (`src.ai.physical_verification.verify_predictions`)."""
+    ordered = verification.sort_values("reference_renewable_share").reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(ordered.index, 100 * ordered["reference_renewable_share"], color="black", linewidth=1.5,
+            label="Mechanistic (reference)")
+    ax.plot(ordered.index, 100 * ordered["verified_renewable_share"], color="darkorange", linewidth=0.8, alpha=0.8,
+            label=f"{model_name} (predicted)")
+    ax.set_xlabel("Test scenarios, sorted by mechanistic reference renewable share")
+    ax.set_ylabel("Renewable share (%)")
+    ax.set_title(f"Renewable Share: Mechanistic vs. {model_name}")
+    ax.legend()
+    fig.tight_layout()
+    return fig

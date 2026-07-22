@@ -711,6 +711,30 @@ roughly evenly in direction), rather than oversizing disappearing outright.
 ![Cost penalty from AI oversizing, full scale](../outputs/figures/26_cost_penalty_oversizing_full.png)
 *Figure 26 (full-scale) — Additional annualized system cost from oversizing, by model, full scale.*
 
+The table above and Figure 29 summarize the comparison with single numbers
+per model (mean extra system LCOE, MAE, R^2 in §17). Figures 30 and 31 make
+the same mechanistic-vs-neural-network comparison directly, plotting the
+mechanistic-reference and neural-network-predicted value for every one of
+the 751 full-scale test scenarios, sorted by the mechanistic reference so
+both series can be read scenario-by-scenario rather than only through
+aggregate statistics. Figure 30 compares battery capacity: the neural
+network's predicted capacity (light blue) tracks the mechanistic reference
+(black) closely across the full 250-9,500 kWh range spanned by the test set,
+with visible scatter concentrated in the low-capacity region (roughly
+scenarios 150-450) where several distinct reference capacities cluster close
+together and small prediction errors are more likely to cross a module
+boundary. Figure 31 shows the same comparison for renewable share, where the
+two lines are close to indistinguishable across the full 28-99% range -- a
+direct visual counterpart to Figure 28's mechanistic-only renewable-share
+curve, now with the neural network's own re-simulated renewable share
+overlaid on it.
+
+![Battery capacity: mechanistic reference vs. neural network prediction, full scale, all 751 test scenarios](../outputs/figures/30_capacity_comparison_neural_network_full.png)
+*Figure 30 (full-scale) — Battery capacity, mechanistic reference vs. neural-network-predicted, sorted by reference capacity. The two lines track closely; visible scatter is concentrated in the low-capacity region.*
+
+![Renewable share: mechanistic reference vs. neural network prediction, full scale, all 751 test scenarios](../outputs/figures/31_renewable_share_comparison_neural_network_full.png)
+*Figure 31 (full-scale) — Renewable share, mechanistic reference vs. neural-network-predicted, sorted by reference renewable share. The two lines are nearly indistinguishable across the full range.*
+
 Full per-scenario tables: `outputs/tables/physical_verification_{model}_full.csv`.
 Summary: `outputs/tables/physical_verification_summary_by_model_full.csv`.
 
