@@ -31,7 +31,7 @@ more battery is added beyond that point. Getting the size right is worth real mo
 getting it wrong in either direction costs more than it needs to.
 
 ![System cost of electricity vs. battery size — costs fall, then rise again](../outputs/figures/27_system_lcoe_vs_capacity.png)
-*The system's cost per kilowatt-hour as battery size increases. The lowest-cost point (19 battery modules, 4,750 kWh) sits in the middle — not at zero battery, and not at the largest battery tested.*
+*Figure 1 — The system's cost per kilowatt-hour as battery size increases. The lowest-cost point (19 battery modules, 4,750 kWh) sits in the middle — not at zero battery, and not at the largest battery tested.*
 
 ## 2. Comparison of the Two Methods
 
@@ -81,7 +81,7 @@ The results depended heavily on how much data the AI had been trained on:
   Random Forest) also tested in this study.
 
 ![Extra cost per kilowatt-hour from trusting each model's recommendation, well-trained version](../outputs/figures/29_extra_lcoe_by_model_full.png)
-*Extra cost incurred, per model, from following its battery-size recommendation instead of the true optimum — after training on 5,000 example projects. Lower is better. The AI (neural network) and Random Forest are statistically tied for cheapest to trust.*
+*Figure 2 — Extra cost incurred, per model, from following its battery-size recommendation instead of the true optimum — after training on 5,000 example projects. Lower is better. The AI (neural network) and Random Forest are statistically tied for cheapest to trust.*
 
 **The takeaway for investors:** an AI model is only as good as the data used to train
 it. A model trained on too few examples can give recommendations that are actively
@@ -131,7 +131,7 @@ project evaluation, the traditional simulation is already fast enough and remain
 more directly trustworthy choice.
 
 ![How long each step takes, from full simulation to AI prediction (log scale)](../outputs/figures/24_runtime_comparison.png)
-*Time required per evaluation, from slowest (full mechanistic simulation) to fastest (AI inference) — note the scale is logarithmic, so each step down is roughly a 10x-1000x speed difference.*
+*Figure 3 — Time required per evaluation, from slowest (full mechanistic simulation) to fastest (AI inference) — note the scale is logarithmic, so each step down is roughly a 10x-1000x speed difference.*
 
 ## 6. When Mechanistic Verification Is Necessary
 
