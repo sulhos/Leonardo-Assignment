@@ -91,13 +91,14 @@ as reliable as the full engineering calculation — while still being thousands 
 times faster to run.
 
 Figure 3 shows this agreement directly, in the same style as Figure 1's cost curve, for
-one example project rather than a single summary number. It re-draws that same
-U-shaped cost curve for a representative project from the test set, then marks two
-points on it: the true lowest-cost battery size (green star) and the size the
-well-trained AI recommended (red star). The two stars sit almost on top of each
-other, right at the bottom of the curve — the AI's recommendation and the true
-optimum both land within about 250 kilowatt-hours of each other, and within half a
-cent per kilowatt-hour of cost.
+one example project rather than a single summary number. It re-draws the same kind of
+U-shaped cost curve for a different, representative project from the test set (not
+the same project as Figure 1's baseline case, so the curve's exact shape and numbers
+differ — only the style of chart is the same), then marks two points on it: the true
+lowest-cost battery size (green star) and the size the well-trained AI recommended
+(red star). The two stars sit almost on top of each other, right at the bottom of the
+curve — the AI's recommendation and the true optimum both land within about 250
+kilowatt-hours of each other, and within half a cent per kilowatt-hour of cost.
 
 ![System cost of electricity vs. battery size for one example project, with the true optimum and the AI's recommendation both marked](../outputs/figures/32_system_lcoe_curve_with_nn_prediction_full.png)
 *Figure 3 — Cost curve for one representative test project, with the true lowest-cost battery size (green star) and the AI's recommended size (red star) marked. The two stars sit almost on top of each other at the bottom of the curve.*
