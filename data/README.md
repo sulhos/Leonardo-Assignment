@@ -1,8 +1,13 @@
 # Data directory
 
-This directory is git-ignored for large/generated content except for this README and
-`.gitkeep` placeholders (see `.gitignore`). Nothing here should be treated as a
-permanent source of truth — regenerate from `src/` + `config/`.
+`raw/` and `processed/` (the NASA POWER weather cache) are committed directly, so the
+repo is self-contained and reproducible without depending on the NASA POWER API being
+reachable or unchanged at clone time. `scenarios/` and `ml_dataset/` are also
+committed (see below) since they are explicit project deliverables. Everything here
+is still regenerable from `src/` + `config/` if ever needed (`get_processed_weather`
+re-fetches from the API when the cache is absent) -- committing it is a convenience
+and reproducibility guarantee, not a claim that it's hand-authored or can't be
+rebuilt.
 
 ## Layout
 

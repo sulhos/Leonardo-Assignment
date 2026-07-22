@@ -23,12 +23,10 @@ env/
 # Environment / secrets
 .env
 
-# Weather cache: large-ish, purely regenerable from the public NASA POWER API,
-# no compute cost beyond a few seconds -- not committed.
-data/raw/*
-!data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
+# Weather cache: purely regenerable from the public NASA POWER API, no compute
+# cost beyond a few seconds -- but committed anyway (per explicit request) so
+# the repo is self-contained and reproducible without depending on the NASA
+# POWER API being reachable/unchanged at clone time.
 
 # data/scenarios (the actual pilot/dev/full scenario datasets) and outputs/*
 # (result tables and figures) ARE committed: they are explicit deliverables
