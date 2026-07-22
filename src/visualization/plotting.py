@@ -518,6 +518,49 @@ def plot_extra_lcoe_by_model(summary_by_model: dict[str, dict]) -> plt.Figure:
     return fig
 
 
+def plot_system_lcoe_curve_with_ai_prediction(
+    candidates: pd.DataFrame,
+    reference_capacity_kwh: float,
+    reference_lcoe_eur_per_kwh: float,
+    predicted_capacity_kwh: float,
+    predicted_lcoe_eur_per_kwh: float,
+    model_name: str,
+) -> plt.Figure:
+    """Same System LCOE vs. battery capacity curve as figure 27
+    (`plot_metric_vs_battery_capacity`), for one specific scenario's full
+    exhaustive candidate sweep, with the mechanistic optimum and the AI
+    model's predicted capacity marked directly on it -- the AI-comparison
+    counterpart to figure 27, which shows the mechanistic curve alone.
+
+    Unlike `plot_capacity_comparison_line`/`plot_renewable_share_comparison_line`
+    (which compare many scenarios' single reference/predicted values against
+    each other), this reuses figure 27's own per-scenario curve shape so the
+    AI's answer can be read directly against the U-shaped cost trade-off it
+    is implicitly trying to approximate, for one scenario at a time -- the
+    neural network itself has no such curve (it predicts one capacity
+    number, not a cost function), so its "curve" here is a single marked
+    point on the mechanistic curve."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(
+        candidates["nominal_battery_capacity_kwh"], candidates["system_lcoe_eur_per_kwh"],
+        marker="o", markersize=3, color="black", linewidth=1.2, label="Mechanistic (all candidates)",
+    )
+    ax.scatter(
+        [reference_capacity_kwh], [reference_lcoe_eur_per_kwh],
+        color="seagreen", marker="*", s=220, zorder=5, label="Mechanistic optimum",
+    )
+    ax.scatter(
+        [predicted_capacity_kwh], [predicted_lcoe_eur_per_kwh],
+        color="firebrick", marker="*", s=220, zorder=5, label=f"{model_name} prediction",
+    )
+    ax.set_xlabel("Battery capacity (kWh)")
+    ax.set_ylabel("System LCOE (EUR/kWh)")
+    ax.set_title(f"System LCOE vs. Battery Capacity: Mechanistic vs. {model_name}")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
 def plot_capacity_comparison_line(verification: pd.DataFrame, model_name: str) -> plt.Figure:
     """Line comparison of mechanistic-reference vs. AI-predicted battery
     capacity, one point per test scenario, sorted by the mechanistic

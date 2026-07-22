@@ -90,17 +90,29 @@ than a naive guess. The same model, given enough training data, becomes essentia
 as reliable as the full engineering calculation — while still being thousands of
 times faster to run.
 
-Figure 3 shows this agreement directly, rather than through a single summary number.
-It plots the battery size recommended by the traditional engineering calculation
-against the battery size recommended by the well-trained AI, for all 751 test
-projects, sorted from smallest to largest. The two lines follow each other closely
-across the entire range, from small batteries (a few hundred kilowatt-hours) to
-large ones (nearly 9,500 kilowatt-hours) — this is the well-trained AI's
-recommendation tracking the engineering calculation's answer project by project, not
-just matching it on average.
+Figure 3 shows this agreement directly, in the same style as Figure 1's cost curve, for
+one example project rather than a single summary number. It re-draws that same
+U-shaped cost curve for a representative project from the test set, then marks two
+points on it: the true lowest-cost battery size (green star) and the size the
+well-trained AI recommended (red star). The two stars sit almost on top of each
+other, right at the bottom of the curve — the AI's recommendation and the true
+optimum both land within about 250 kilowatt-hours of each other, and within half a
+cent per kilowatt-hour of cost.
+
+![System cost of electricity vs. battery size for one example project, with the true optimum and the AI's recommendation both marked](../outputs/figures/32_system_lcoe_curve_with_nn_prediction_full.png)
+*Figure 3 — Cost curve for one representative test project, with the true lowest-cost battery size (green star) and the AI's recommended size (red star) marked. The two stars sit almost on top of each other at the bottom of the curve.*
+
+For a broader check across all 751 test projects at once (not just the one shown in
+Figure 3), Figure 4 plots the battery size recommended by the traditional engineering
+calculation against the battery size recommended by the well-trained AI, sorted from
+smallest to largest project. The two lines follow each other closely across the
+entire range, from small batteries (a few hundred kilowatt-hours) to large ones
+(nearly 9,500 kilowatt-hours) — this is the well-trained AI's recommendation tracking
+the engineering calculation's answer project by project, not just matching it on
+average.
 
 ![Battery size recommended by the traditional method vs. by the well-trained AI, across 751 test projects](../outputs/figures/30_capacity_comparison_neural_network_full.png)
-*Figure 3 — Battery size recommended by the traditional engineering calculation (black) vs. the well-trained AI (blue), for 751 test projects sorted by the traditional calculation's answer. The two lines track closely across the full range of project sizes.*
+*Figure 4 — Battery size recommended by the traditional engineering calculation (black) vs. the well-trained AI (blue), for 751 test projects sorted by the traditional calculation's answer. The two lines track closely across the full range of project sizes.*
 
 ## 4. Reliability Risks
 
@@ -125,7 +137,7 @@ part of the standard design.)
 
 ## 5. When AI Is Useful
 
-AI inference is dramatically faster than the full simulation (Figure 4) — a single
+AI inference is dramatically faster than the full simulation (Figure 5) — a single
 prediction takes a fraction of a millisecond, versus roughly a tenth to a third of a
 second for the full simulation. But training an AI model itself takes time and
 requires generating training examples with the (slower) mechanistic method first.
@@ -145,7 +157,7 @@ the traditional simulation is already fast enough and remains the more directly
 trustworthy choice.
 
 ![How long each step takes, from full simulation to AI prediction (log scale)](../outputs/figures/24_runtime_comparison.png)
-*Figure 4 — Time required per evaluation, from slowest (full mechanistic simulation) to fastest (AI inference) — note the scale is logarithmic, so each step down is roughly a 10x-1000x speed difference.*
+*Figure 5 — Time required per evaluation, from slowest (full mechanistic simulation) to fastest (AI inference) — note the scale is logarithmic, so each step down is roughly a 10x-1000x speed difference.*
 
 ## 6. When Mechanistic Verification Is Necessary
 

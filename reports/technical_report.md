@@ -735,6 +735,35 @@ overlaid on it.
 ![Renewable share: mechanistic reference vs. neural network prediction, full scale, all 751 test scenarios](../outputs/figures/31_renewable_share_comparison_neural_network_full.png)
 *Figure 31 (full-scale) — Renewable share, mechanistic reference vs. neural-network-predicted, sorted by reference renewable share. The two lines are nearly indistinguishable across the full range.*
 
+Figures 30-31 compare many scenarios at once through a common index axis.
+Figure 32 instead reuses Figure 27's own chart form -- System LCOE vs.
+battery capacity, for one specific scenario's full 81-candidate mechanistic
+sweep -- with the mechanistic optimum and the neural network's predicted
+capacity both marked directly on that scenario's curve, so the AI's answer
+can be read against the underlying cost trade-off it is implicitly trying to
+approximate. Figure 27's own scenario (the fixed industrial baseline) cannot
+be reused for this: its industrial two-shift load shape (load factor 0.542)
+is not achievable under `generate_load_profile`'s default
+`residential_baseline` shape, which every sampled scenario in this dataset
+(pilot and full-scale alike) actually uses -- confirmed directly, since
+requesting the baseline's own annual-load/peak-load combination under the
+residential default raises `generate_load_profile`'s own achievability
+`ValueError`. The neural network was therefore never trained on anything
+resembling Figure 27's scenario, so marking its prediction on that exact
+curve would show an extrapolation failure rather than a fair test of the
+model (see the new Limitations item below). Figure 32 instead reruns the
+full candidate sweep for test-split scenario 175 -- the scenario closest to
+the full test set's median reference battery capacity, so a representative
+rather than cherry-picked case -- a scenario the model was actually
+evaluated on. The two marked points sit almost on top of each other, right
+at the curve's minimum (mechanistic optimum: 3,500 kWh, 0.2316 EUR/kWh;
+neural network: 3,750 kWh, 0.2321 EUR/kWh, a difference of 0.0005 EUR/kWh),
+consistent with this scenario's small extra system LCOE in the underlying
+per-scenario table.
+
+![System LCOE vs. battery capacity for one representative test scenario, mechanistic curve with the mechanistic optimum and neural network prediction both marked](../outputs/figures/32_system_lcoe_curve_with_nn_prediction_full.png)
+*Figure 32 (full-scale, scenario 175) — System LCOE vs. battery capacity, mechanistic sweep with the mechanistic optimum (green star) and neural network prediction (red star) marked. The two stars sit almost on top of each other at the curve's minimum.*
+
 Full per-scenario tables: `outputs/tables/physical_verification_{model}_full.csv`.
 Summary: `outputs/tables/physical_verification_summary_by_model_full.csv`.
 
@@ -994,10 +1023,37 @@ economic penalty shrinks even as the summed total grows with test-set size.
   load_profile.py`'s `industrial_baseline` family, PROJECT_BRIEF.md Addendum
   2): two-shift operation, a 45% weekend reduction, and a weak seasonal
   swing. A continuous-process facility (steel, chemicals) or a strictly
-  weekdays-only operation would have a materially different shape, and every
-  downstream number in this report -- from Stage 3's baseline feasibility
-  finding through the full 5,000-scenario dataset -- is conditional on this
-  specific shape choice.
+  weekdays-only operation would have a materially different shape, and
+  every number in this report that traces back to Stage 3's fixed baseline
+  scenario (§14, Figures 27-28) is conditional on this specific shape
+  choice.
+- The `industrial_baseline` shape is used only by Stage 3's single fixed
+  baseline scenario, not by the sampled scenario dataset. Found while
+  building Figure 32 (above): `src.scenarios.sampling`,
+  `src.scenarios.scenario_runner`, and `src.ai.features.build_feature_matrix`
+  all call `generate_load_profile` without a `profile_family` argument, so
+  every one of the pilot's 100 and the full run's 5,000 sampled scenarios --
+  despite being drawn from `config/scenario_generation.yaml`'s
+  industrial-scale capacity/load *ranges* -- actually used
+  `generate_load_profile`'s default `residential_baseline` *shape*, not the
+  `industrial_baseline` shape used for Figure 27/28's own curve. The two are
+  not close substitutes: Stage 3's exact baseline annual-load/peak-load
+  combination (load factor 0.542) is not even achievable under the
+  residential shape's peak-to-average constraints (`generate_load_profile`
+  raises its own achievability `ValueError` if asked). This means the ML
+  pipeline's "industrial pivot" (Addendum 2) only ever changed the sampled
+  *capacity and load ranges*, not the load *curve shape* feeding model
+  training -- a real, previously undocumented gap between the intended and
+  implemented scope of that pivot. It does not invalidate this report's
+  ML-accuracy or physical-verification findings (Figures 17-31 are all
+  internally consistent, since training and test scenarios share the same
+  residential-shaped generation pipeline throughout), but it does mean
+  Stage 3's single baseline scenario (§14) is not actually representative of
+  what the neural network was trained on, which is why Figure 32 uses a
+  test-split scenario instead of Figure 27's own baseline case. Fixing this
+  (threading `industrial_baseline` through scenario sampling and
+  regenerating the full 5,000-scenario dataset and every downstream model)
+  was out of scope for this finding's discovery and has not been done.
 - No cost-sensitivity analysis across battery, diesel, PV, or wind
   price assumptions. The full sensitivity sweep across cost assumptions
   (PROJECT_BRIEF.md stretch goal) was not attempted for any of the four
