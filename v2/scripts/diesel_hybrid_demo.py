@@ -28,6 +28,8 @@ from src.physics.wind_model import compute_wind_generation
 from src.visualization.plotting import (
     plot_diesel_engagement_week,
     plot_energy_flow_balance_with_diesel,
+    plot_metric_vs_battery_capacity,
+    plot_renewable_share_vs_lcoe,
     save_figure,
 )
 
@@ -102,6 +104,70 @@ def run() -> dict:
     )
     save_figure(plot_energy_flow_balance_with_diesel(dwd), out_dir / "12_energy_flow_balance_diesel_hybrid.png")
 
+    # Where does more battery/renewable share stop paying for itself? The
+    # search's own objective already answers "where is the minimum" (the
+    # selected candidate); this identifies the SHAPE around that minimum --
+    # the diesel-only floor, and how much system LCOE rises again once
+    # renewable share is pushed toward its ceiling.
+    candidates_sorted = result.candidates.sort_values("nominal_battery_capacity_kwh").reset_index(drop=True)
+    diesel_only = candidates_sorted.iloc[0]  # n_modules = 0
+    max_battery = candidates_sorted.iloc[-1]  # n_modules = n_max
+    optimal_row = candidates_sorted.loc[candidates_sorted["system_lcoe_eur_per_kwh"].idxmin()]
+
+    fig13 = plot_renewable_share_vs_lcoe(
+        result.candidates, title="Renewable Share vs. System LCOE (Diesel-Hybrid Demonstration)",
+    )
+    ax13 = fig13.axes[0]
+    ax13.scatter(
+        [optimal_row["system_lcoe_eur_per_kwh"]], [optimal_row["renewable_share"] * 100],
+        color="firebrick", s=90, zorder=5, marker="*",
+        label=f"Sweet spot: {int(optimal_row['n_modules'])} modules, {optimal_row['renewable_share']*100:.1f}% renewable",
+    )
+    ax13.annotate(
+        f"minimum LCOE\n{optimal_row['system_lcoe_eur_per_kwh']:.3f} EUR/kWh\n@ {optimal_row['renewable_share']*100:.1f}% renewable",
+        xy=(optimal_row["system_lcoe_eur_per_kwh"], optimal_row["renewable_share"] * 100),
+        xytext=(55, -55), textcoords="offset points", fontsize=9, color="firebrick", ha="left",
+        arrowprops=dict(arrowstyle="->", color="firebrick", lw=1),
+    )
+    ax13.legend(loc="lower right", fontsize=8)
+    save_figure(fig13, out_dir / "13_renewable_share_vs_lcoe.png")
+
+    fig14 = plot_metric_vs_battery_capacity(
+        result.candidates, metric_column="system_lcoe_eur_per_kwh", ylabel="System LCOE (EUR/kWh)",
+    )
+    ax14 = fig14.axes[0]
+    ax14.axvline(optimal_row["nominal_battery_capacity_kwh"], color="firebrick", linestyle="--", linewidth=1, alpha=0.7)
+    ax14.scatter(
+        [optimal_row["nominal_battery_capacity_kwh"]], [optimal_row["system_lcoe_eur_per_kwh"]],
+        color="firebrick", s=90, zorder=5, marker="*",
+        label=f"Minimum LCOE: {int(optimal_row['n_modules'])} modules, {optimal_row['nominal_battery_capacity_kwh']:.0f} kWh",
+    )
+    ax14.annotate(
+        "cheaper to add\nbattery here", xy=(optimal_row["nominal_battery_capacity_kwh"] * 0.35, diesel_only["system_lcoe_eur_per_kwh"] * 0.985),
+        fontsize=9, color="seagreen", ha="center",
+    )
+    ax14.annotate(
+        "battery capex now\noutweighs fuel savings", xy=(candidates_sorted["nominal_battery_capacity_kwh"].iloc[-15], candidates_sorted["system_lcoe_eur_per_kwh"].iloc[-15]),
+        xytext=(-110, 15), textcoords="offset points", fontsize=9, color="darkorange",
+        arrowprops=dict(arrowstyle="->", color="darkorange", lw=1),
+    )
+    ax14.legend(loc="upper center", fontsize=8)
+    save_figure(fig14, out_dir / "14_battery_capacity_vs_lcoe.png")
+    lcoe_curve_analysis = {
+        "diesel_only_n_modules": int(diesel_only["n_modules"]),
+        "diesel_only_lcoe_eur_per_kwh": float(diesel_only["system_lcoe_eur_per_kwh"]),
+        "diesel_only_renewable_share_pct": float(diesel_only["renewable_share"] * 100),
+        "optimal_n_modules": int(optimal_row["n_modules"]),
+        "optimal_lcoe_eur_per_kwh": float(optimal_row["system_lcoe_eur_per_kwh"]),
+        "optimal_renewable_share_pct": float(optimal_row["renewable_share"] * 100),
+        "max_battery_n_modules": int(max_battery["n_modules"]),
+        "max_battery_lcoe_eur_per_kwh": float(max_battery["system_lcoe_eur_per_kwh"]),
+        "max_battery_renewable_share_pct": float(max_battery["renewable_share"] * 100),
+        "lcoe_saving_diesel_only_to_optimal_eur_per_kwh": float(diesel_only["system_lcoe_eur_per_kwh"] - optimal_row["system_lcoe_eur_per_kwh"]),
+        "lcoe_penalty_optimal_to_max_battery_eur_per_kwh": float(max_battery["system_lcoe_eur_per_kwh"] - optimal_row["system_lcoe_eur_per_kwh"]),
+    }
+    print("LCOE curve shape:", json.dumps(lcoe_curve_analysis, indent=2))
+
     total_load = float(dwd["load_kw"].sum())
     direct = float(dwd["direct_supply_kwh"].sum())
     batt_discharge = float(dwd["battery_discharge_kwh"].sum())
@@ -137,6 +203,7 @@ def run() -> dict:
         "system_lcoe_eur_per_kwh": result.system_lcoe_eur_per_kwh,
         "max_hourly_energy_balance_residual_kwh": max_hourly_residual,
         "annual_energy_balance_residual_kwh": annual_residual,
+        "lcoe_curve_analysis": lcoe_curve_analysis,
     }
     print(json.dumps(summary, indent=2))
 
@@ -145,6 +212,7 @@ def run() -> dict:
     with open(out_dir_tables / "diesel_hybrid_demo_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     dwd.to_csv(out_dir_tables / "diesel_hybrid_demo_hourly_dispatch.csv")
+    candidates_sorted.to_csv(out_dir_tables / "diesel_hybrid_demo_battery_candidates.csv", index=False)
 
     return summary
 

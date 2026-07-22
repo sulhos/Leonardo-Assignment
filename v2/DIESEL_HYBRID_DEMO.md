@@ -97,6 +97,37 @@ script's output, also saved to `outputs/tables/diesel_hybrid_demo_summary.json`)
   battery charge (1.10 GWh), and curtailed (0.77 GWh); load is served by
   direct supply (2.29 GWh), battery discharge (1.04 GWh), and diesel
   (1.17 GWh), with zero still-unserved.
+- `13_renewable_share_vs_lcoe.png` and `14_battery_capacity_vs_lcoe.png` —
+  the full 0–80-module candidate sweep (reusing the same
+  `plot_renewable_share_vs_lcoe`/`plot_metric_vs_battery_capacity`
+  functions the pre-Task-11 build used), with the LCOE-minimizing
+  candidate marked. See "Where does more battery stop paying for itself"
+  below for the numbers behind these two figures.
+
+### Where does more battery stop paying for itself?
+
+The full 0–80-module sweep traces a clean U-shaped (backward-bending)
+curve, exactly the OptiCE "renewable share vs. LCOE" shape the course
+lecture material describes:
+
+| Point | Modules | Battery capacity | System LCOE | Renewable share |
+|---|---|---|---|---|
+| Diesel-only (no battery) | 0 | 0 kWh | 0.346 EUR/kWh | 50.9% |
+| **LCOE-minimizing (the search's own optimum)** | **24** | **6,000 kWh** | **0.288 EUR/kWh** | **74.1%** |
+| Maximum tested battery | 80 | 20,000 kWh | 0.374 EUR/kWh | 80.4% |
+
+**Reading this**: starting from diesel-only, each added battery module
+saves more in diesel fuel than it costs in capital — LCOE falls by 0.058
+EUR/kWh (17%) as renewable share climbs from 50.9% to 74.1%. Past 24
+modules, the relationship flips: each additional module's capital cost now
+exceeds what it saves in fuel, because the *marginal* battery capacity is
+mostly covering rarer and rarer high-deficit hours rather than displacing
+routine diesel runtime. Pushing all the way to the 80-module cap buys only
+another 6.3 percentage points of renewable share (74.1% → 80.4%) but costs
+0.086 EUR/kWh (30%) more than the optimum — a much worse trade than the
+first 24 modules delivered. In short: **renewable share is worth paying
+for up to ~74%; beyond that, each additional percentage point gets
+markedly more expensive per kWh delivered.**
 
 ## What this does NOT do (explicitly deferred, per the originating task's own scope)
 

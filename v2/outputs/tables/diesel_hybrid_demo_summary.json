@@ -19,5 +19,18 @@
   "optimal_capacity_kwh": 6000.0,
   "system_lcoe_eur_per_kwh": 0.28810706633208727,
   "max_hourly_energy_balance_residual_kwh": 1.1368683772161603e-13,
-  "annual_energy_balance_residual_kwh": 0.0
+  "annual_energy_balance_residual_kwh": 0.0,
+  "lcoe_curve_analysis": {
+    "diesel_only_n_modules": 0,
+    "diesel_only_lcoe_eur_per_kwh": 0.34639481871205485,
+    "diesel_only_renewable_share_pct": 50.92107760772107,
+    "optimal_n_modules": 24,
+    "optimal_lcoe_eur_per_kwh": 0.28810706633208727,
+    "optimal_renewable_share_pct": 74.10393357338951,
+    "max_battery_n_modules": 80,
+    "max_battery_lcoe_eur_per_kwh": 0.3738614798847073,
+    "max_battery_renewable_share_pct": 80.43396588041465,
+    "lcoe_saving_diesel_only_to_optimal_eur_per_kwh": 0.05828775237996758,
+    "lcoe_penalty_optimal_to_max_battery_eur_per_kwh": 0.08575441355262003
+  }
 }
