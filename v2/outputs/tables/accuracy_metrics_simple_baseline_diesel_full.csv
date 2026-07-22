@@ -1,0 +1,2 @@
+model,features_used,mae,rmse,r2,median_absolute_error,mape,max_absolute_error,mean_signed_error_bias,pct_within_5pct,pct_within_10pct,pct_within_20pct,n_samples
+linear_regression_top3,"['renewable_to_load_ratio', 'worst_monthly_renewable_to_load_ratio', 'n_deficit_hours']",1205.1304976176887,1529.341880474764,0.4526795771413388,979.4294313491664,0.3525382198003313,5471.490811961947,34.83706494159361,0.1118508655126498,0.21837549933422104,0.4247669773635153,751
