@@ -236,7 +236,19 @@ is resumable (scenario-level CSV caching, verified by test) and records a
 configuration hash and random seed for reproducibility.
 
 Full results: `outputs/tables/scenario_inputs_and_labels.csv` /
-`data/scenarios/pilot_scenarios.csv`. Figures: `outputs/figures/12`-`15`.
+`data/scenarios/pilot_scenarios.csv`.
+
+![Distributions of the sampled PV capacity, wind capacity, annual load, peak load, reliability target, round-trip efficiency, and usable SOC window across the 100 pilot scenarios](../outputs/figures/12_scenario_input_distributions.png)
+*Figure 12 — Sampled input distributions across the 100-scenario pilot.*
+
+![Distribution of each scenario's system-LCOE-minimizing battery capacity](../outputs/figures/13_optimal_capacity_distribution.png)
+*Figure 13 — Distribution of the LCOE-optimal battery capacity, the ML regression target.*
+
+![100 of 100 scenarios feasible, 0 infeasible in either category](../outputs/figures/14_feasibility_counts.png)
+*Figure 14 — Feasible vs. infeasible scenario counts: 100/100 feasible, near-universal by diesel's construction (§8).*
+
+![Correlation matrix heatmap between the raw sampled scenario inputs](../outputs/figures/15_correlation_matrix.png)
+*Figure 15 — Correlation between raw scenario inputs, checked for unintended sampling coupling.*
 
 **Stage 8: full 5,000-scenario dataset.** Generated directly at full scale
 using the identical sampling ranges, consistency check, and 0-80 module
@@ -311,15 +323,17 @@ as the Stage 5 baselines, with inputs standardized by a scaler fit on the traini
 split only.
 
 **Actual run:** converged in 62 epochs (6.9s on CPU), best validation loss
-1586.6. Unlike the pre-diesel industrial pilot's overtly diverging curve, this
-run's loss curve (`outputs/figures/16_training_validation_loss.png`) shows a
-more standard early-stopping pattern -- but the underlying problem is the same
-in kind: **70 training rows is not enough data for a 15,233-parameter
-network to learn reliably**, which becomes explicit in §15.1/§16.1 (test-set
-R² -2.22, worse than every other model including the naive baseline). This is
-reported as the honest, unmodified result of the pilot's actual (small)
-sample size -- not adjusted, retried with different seeds, or hidden -- and is
-a large part of why Stage 8/9's full-scale re-run matters.
+1586.6. This run's loss curve shows a standard early-stopping pattern, but the
+underlying problem shows up downstream anyway: **70 training rows is not
+enough data for a 15,233-parameter network to learn reliably**, which becomes
+explicit below (test-set R² -2.22, worse than every other model including the
+naive baseline). This is reported as the honest, unmodified result of the
+pilot's actual (small) sample size -- not adjusted, retried with different
+seeds, or hidden -- and is a large part of why Stage 8/9's full-scale re-run
+matters.
+
+![Pilot MLP training/validation loss curve, 62 epochs](../outputs/figures/16_training_validation_loss.png)
+*Figure 16 (pilot) — Training/validation loss, 70-row training set. Early stopping at epoch 62.*
 
 Saved artifacts: `models/neural_network/best_model.weights.h5` (portable
 weights; loaded via `load_trained_model`, which rebuilds the architecture from
@@ -380,18 +394,25 @@ reliable). An extended diagnostic search over 0-200 modules (not the baseline
 result) found the identical optimum at 19 modules, confirming the configured
 0-80 range genuinely captures the LCOE minimum rather than truncating it.
 
-The system LCOE curve (`outputs/figures/27_system_lcoe_vs_capacity.png`) is a
-clean convex U-shape: LCOE starts at 0.287 EUR/kWh with no battery (heavy
-diesel reliance), falls to its 0.2390 EUR/kWh minimum at 19 modules as battery
-capacity substitutes for diesel fuel, then rises again beyond ~19 modules as
-additional battery capital cost outweighs the shrinking diesel-fuel savings.
+The system LCOE curve is a clean convex U-shape: LCOE starts at 0.287 EUR/kWh
+with no battery (heavy diesel reliance), falls to its 0.2390 EUR/kWh minimum
+at 19 modules as battery capacity substitutes for diesel fuel, then rises
+again beyond ~19 modules as additional battery capital cost outweighs the
+shrinking diesel-fuel savings.
+
+![System LCOE vs. battery capacity: a U-shaped curve minimized at 19 modules](../outputs/figures/27_system_lcoe_vs_capacity.png)
+*Figure 27 — System LCOE vs. battery capacity. Minimum: 0.2390 EUR/kWh at 19 modules.*
+
 Renewable share climbs monotonically with battery capacity throughout (to
-89.9% at 80 modules) even past the LCOE minimum --
-`outputs/figures/28_renewable_share_vs_lcoe.png` reproduces the shape of the
-course lecture's OptiCE "Typical results (1)" chart (renewable share % vs.
-LCOE) directly from this project's own exhaustive search output, with the
-minimum-LCOE point sitting at a renewable share (80.2%) well below 100%,
-matching the qualitative shape of that reference chart.
+89.9% at 80 modules) even past the LCOE minimum -- the chart below reproduces
+the shape of the course lecture's OptiCE "Typical results (1)" chart
+(renewable share % vs. LCOE) directly from this project's own exhaustive
+search output, with the minimum-LCOE point sitting at a renewable share
+(80.2%) well below 100%, matching the qualitative shape of that reference
+chart.
+
+![Renewable share vs. system LCOE, reproducing the OptiCE course lecture chart shape](../outputs/figures/28_renewable_share_vs_lcoe.png)
+*Figure 28 — Renewable share vs. system LCOE. The minimum-LCOE "tipping point" sits at 80.2% renewable share.*
 
 This is the same underlying site physics documented under the pre-diesel
 design: annual PV+wind production (4,232,266 kWh) exceeds annual load
@@ -407,9 +428,22 @@ exactly the point where that trade-off balances, and the seasonal mismatch now
 shows up as diesel fuel consumption (driving the 80.2% ceiling on renewable
 share at the LCOE optimum) rather than as outright infeasibility.
 
+![LPSP (renewables + battery only, pre-diesel) vs. battery capacity](../outputs/figures/07_lpsp_vs_capacity.png)
+*Figure 7 — LPSP from renewables and battery alone (pre-diesel), vs. capacity. Diagnostic only; not the search's binding constraint under Addendum 3.*
+
+![Curtailed renewable energy vs. battery capacity](../outputs/figures/08_curtailment_vs_capacity.png)
+*Figure 8 — Curtailed (wasted) renewable energy vs. battery capacity, monotonically decreasing.*
+
+![Battery-only annualized cost vs. capacity](../outputs/figures/09_cost_vs_capacity.png)
+*Figure 9 — Battery-only equivalent annual cost vs. capacity (linear in capacity).*
+
+![Representative winter-week state-of-charge trajectory for the 19-module optimal battery](../outputs/figures/10_soc_profile.png)
+*Figure 10 — SOC trajectory for the system-LCOE-optimal battery (19 modules), a representative winter week.*
+
+![Annual energy-flow balance with diesel backup](../outputs/figures/11_energy_flow_balance.png)
+*Figure 11 — Annual energy-flow balance with diesel backup: load is fully covered, no unserved energy.*
+
 Full candidate-by-candidate results: `outputs/tables/baseline_battery_candidate_results.csv`.
-Figures: `outputs/figures/07_lpsp_vs_capacity.png` through `11_energy_flow_balance.png`,
-`27_system_lcoe_vs_capacity.png`, `28_renewable_share_vs_lcoe.png`.
 Mechanistic search runtime: ~6.3 ms/candidate (81 candidates, 0.51 s total) --
 after JIT-compiling the hourly dispatch loop with numba (§9).
 
@@ -453,9 +487,38 @@ matters: one 16-sample test split is not enough evidence to conclude the
 neural network is worse at this task in general, only that it is worse *on
 this split, at this training set size*.
 
+![MAE/RMSE comparison across all four models, pilot scale](../outputs/figures/21_metric_comparison.png)
+*Figure 21 — MAE/RMSE by model, pilot. Ridge and Random Forest lead; the neural network trails even the naive baseline.*
+
+![Predicted vs. reference capacity, Ridge, pilot test split](../outputs/figures/17_predicted_vs_reference_ridge.png)
+*Figure 17a — Ridge: predicted vs. true capacity, pilot test split (n=16). Points hug the diagonal.*
+
+![Predicted vs. reference capacity, Random Forest, pilot test split](../outputs/figures/17_predicted_vs_reference_random_forest.png)
+*Figure 17b — Random Forest: predicted vs. true capacity, pilot test split.*
+
+![Predicted vs. reference capacity, naive baseline, pilot test split](../outputs/figures/17_predicted_vs_reference_naive.png)
+*Figure 17c — Naive median baseline: predicted vs. true capacity, pilot test split.*
+
+![Predicted vs. reference capacity, neural network, pilot test split](../outputs/figures/17_predicted_vs_reference_neural_network.png)
+*Figure 17d — Neural network: predicted vs. true capacity, pilot test split. Visibly the worst fit of the four.*
+
+![Residual distribution, Ridge, pilot](../outputs/figures/18_residuals_ridge.png)
+*Figure 18a — Ridge residuals, tightly clustered near zero.*
+
+![Residual distribution, Random Forest, pilot](../outputs/figures/18_residuals_random_forest.png)
+*Figure 18b — Random Forest residuals, similarly tight clustering.*
+
+![Residual distribution, naive baseline, pilot](../outputs/figures/18_residuals_naive.png)
+*Figure 18c — Naive baseline residuals, wide spread.*
+
+![Residual distribution, neural network, pilot](../outputs/figures/18_residuals_neural_network.png)
+*Figure 18d — Neural network residuals: widest, least-centered spread of the four.*
+
+![Over-/under-prediction rates by model, pilot](../outputs/figures/23_over_under_prediction.png)
+*Figure 23 — Over-/under-prediction rates by model, reported separately per PROJECT_BRIEF.md §21.*
+
 Full tables: `outputs/tables/accuracy_metrics_by_model.csv`,
 `reliability_metrics_by_model.csv`, `runtime_comparison_stage5.csv`.
-Figures: `outputs/figures/16`, `17`, `18`, `21`, `23`.
 
 ### 15.2 Full-scale (Stage 8/9, 5,000-scenario dataset)
 
@@ -492,6 +555,9 @@ small for this architecture to learn from at all. At 3,500 training rows, the
 same architecture and hyperparameters (unchanged, no tuning) produce the
 best-performing model of the four by a wide margin. See §16 for whether this
 accuracy improvement is matched by an economic-cost improvement.
+
+![Full-scale MLP training/validation loss curve, 209 epochs, 5,000-scenario dataset](../outputs/figures/16_training_validation_loss_full.png)
+*Figure 16 (full-scale) — Training/validation loss, 3,500-row training set. Early stopping at epoch 209, best epoch 188.*
 
 Full tables: `outputs/tables/accuracy_metrics_by_model_full.csv`,
 `reliability_metrics_by_model_full.csv`. Model artifacts:
@@ -551,8 +617,17 @@ direct, continuous economic consequence of the accuracy gap documented in
 undersize the battery (11 of 16 scenarios), each one paying a real LCOE
 penalty even though diesel means none of them actually go unserved.
 
+![Mean extra system LCOE from trusting each model's prediction, pilot scale](../outputs/figures/29_extra_lcoe_by_model.png)
+*Figure 29 (pilot) — Mean extra system LCOE by model. Neural network worst (0.0361 EUR/kWh); Ridge/Random Forest cheapest.*
+
+![Reliability pass rate by model, pilot](../outputs/figures/22_reliability_pass_rate.png)
+*Figure 22 (pilot) — Reliability pass rate: 100% for every model, since diesel guarantees it.*
+
+![Cost penalty from AI oversizing, pilot](../outputs/figures/26_cost_penalty_oversizing.png)
+*Figure 26 (pilot) — Additional annualized system cost from oversizing, by model.*
+
 Full per-scenario verification tables: `outputs/tables/physical_verification_{model}.csv`.
-Summary: `physical_verification_summary_by_model.csv`. Figures: `outputs/figures/22`, `26`, `29`.
+Summary: `physical_verification_summary_by_model.csv`.
 
 ### 16.2 Full-scale (Stage 8/9, 5,000-scenario dataset)
 
@@ -594,11 +669,17 @@ each other as accuracy improves (the neural network's combined error rate
 shrinks, but the remaining errors split roughly evenly in direction), rather
 than oversizing disappearing outright.
 
+![Mean extra system LCOE from trusting each model's prediction, full scale](../outputs/figures/29_extra_lcoe_by_model_full.png)
+*Figure 29 (full-scale) — Mean extra system LCOE by model, clean monotonic ordering matching accuracy: naive 0.0145 > Ridge 0.0008 > Random Forest &asymp; neural network &asymp; 0.0003 EUR/kWh.*
+
+![Reliability pass rate by model, full scale](../outputs/figures/22_reliability_pass_rate_full.png)
+*Figure 22 (full-scale) — Reliability pass rate: 100% for every model at every scale.*
+
+![Cost penalty from AI oversizing, full scale](../outputs/figures/26_cost_penalty_oversizing_full.png)
+*Figure 26 (full-scale) — Additional annualized system cost from oversizing, by model, full scale.*
+
 Full per-scenario tables: `outputs/tables/physical_verification_{model}_full.csv`.
 Summary: `outputs/tables/physical_verification_summary_by_model_full.csv`.
-Figure: `outputs/figures/29_extra_lcoe_by_model_full.png` (clean monotonic
-ordering matching accuracy: naive 0.0145 > Ridge 0.0008 > Random Forest
-&asymp; neural network &asymp; 0.0003 EUR/kWh).
 
 **A real, small bug was found and fixed while preparing this full-scale
 rerun.** Physical verification originally sized diesel from each scenario's
@@ -649,6 +730,12 @@ by its slower training time relative to Ridge/Random Forest, not by anything
 about mechanistic search cost. For a one-off ~100-130 scenario evaluation,
 Ridge/RF and mechanistic search are roughly a wash; the neural network needs
 meaningfully more reuse to pay off its training cost.
+
+![Runtime comparison: mechanistic search vs. ML training vs. ML inference, log scale](../outputs/figures/24_runtime_comparison.png)
+*Figure 24 — Runtime comparison across stages, log scale (pilot).*
+
+![Accuracy vs. inference-time trade-off, pilot](../outputs/figures/25_accuracy_runtime_tradeoff.png)
+*Figure 25 — MAE vs. inference time per model, log-x scale (pilot). No full-scale equivalent was generated; the qualitative ordering of inference speed is unchanged by dataset size.*
 
 ### 17.2 Full-scale (Stage 8/9)
 
