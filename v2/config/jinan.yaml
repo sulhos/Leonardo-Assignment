@@ -26,8 +26,25 @@ load:
   # annual balance, consistent with the residential project's baseline
   # (~111% annual coverage, seasonal-timing-limited, not quantity-limited).
   target_annual_kwh: 3800000       # 3.8 GWh/year
-  max_hourly_kw: 800               # implied load factor ~0.54, consistent with the industrial_baseline profile shape
-  profile_family: industrial_baseline
+  # V2 Task 4 (load-shape coherence): profile_family switched from
+  # industrial_baseline to residential_baseline, and max_hourly_kw raised
+  # from 800 to 1100, so the Stage-3 baseline showcase uses the SAME load
+  # shape the sampled ML scenario dataset actually uses --
+  # src.scenarios.{sampling,scenario_runner} and
+  # src.ai.features.build_feature_matrix all call generate_load_profile
+  # without a profile_family argument, so every sampled scenario has always
+  # used the residential_baseline shape regardless of this file's setting
+  # (a real coherence gap in the pre-V2 build). The original
+  # industrial_baseline/800kW combination (load factor 0.542) is not even
+  # achievable under residential_baseline's peak-to-average constraints
+  # (generate_load_profile raises its own achievability ValueError); 1100kW
+  # is the lowest peak at which this annual total becomes achievable
+  # (achieved peak plateaus at ~1013 kW, load factor ~0.43), and 1100kW
+  # sits within scenario_generation.yaml's sampled peak_load_kw range
+  # (250-1300kW), so this baseline case remains representative of the
+  # dataset's own sampling envelope.
+  max_hourly_kw: 1100
+  profile_family: residential_baseline
   random_seed: 42
 
 pv:
