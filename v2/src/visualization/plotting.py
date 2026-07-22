@@ -735,3 +735,44 @@ def plot_cost_sensitivity(cost_sensitivity: pd.DataFrame) -> plt.Figure:
     ax.legend()
     fig.tight_layout()
     return fig
+
+
+def plot_diesel_engagement_week(
+    dispatch_result_with_diesel: pd.DataFrame, week_start: str,
+    battery_min_soc_kwh: float, battery_max_soc_kwh: float, title: str = "Diesel Engaging During a Low-Renewable Week",
+) -> plt.Figure:
+    """Renewable generation, load, battery SOC, and diesel output over the 7
+    days starting at `week_start`, on two stacked panels sharing a time axis
+    (diesel-hybrid demonstration, post-Task-11 addendum): the top panel shows
+    renewables dipping below load and diesel switching on to cover the
+    residual once the battery is drawn down; the bottom panel shows the SOC
+    trajectory hitting its floor at the same time diesel engages, making the
+    handoff visible directly. `dispatch_result_with_diesel` must already
+    have been through `src.physics.diesel.apply_diesel_backup`."""
+    start = pd.Timestamp(week_start, tz=dispatch_result_with_diesel.index.tz)
+    end = start + pd.Timedelta(days=7)
+    mask = (dispatch_result_with_diesel.index >= start) & (dispatch_result_with_diesel.index < end)
+    window = dispatch_result_with_diesel.loc[mask]
+    renewable_kw = window["pv_kw"] + window["wind_kw"] if "pv_kw" in window.columns and "wind_kw" in window.columns else None
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 7), sharex=True, height_ratios=[2, 1])
+
+    if renewable_kw is not None:
+        ax1.plot(window.index, renewable_kw, label="Renewable generation (PV+wind)", color="seagreen", linewidth=1.3)
+    ax1.plot(window.index, window["load_kw"], label="Load", color="black", linewidth=1.3)
+    ax1.plot(window.index, window["diesel_output_kwh"], label="Diesel output", color="dimgrey", linewidth=1.6)
+    ax1.fill_between(window.index, 0, window["diesel_output_kwh"], color="dimgrey", alpha=0.25)
+    ax1.set_ylabel("Power (kW)")
+    ax1.set_title(title)
+    ax1.legend(loc="upper right")
+
+    ax2.plot(window.index, window["soc_kwh"], color="steelblue", linewidth=1.4, label="Battery SOC")
+    ax2.axhline(battery_min_soc_kwh, color="firebrick", linestyle="--", linewidth=0.8, label="Min SOC")
+    ax2.axhline(battery_max_soc_kwh, color="seagreen", linestyle="--", linewidth=0.8, label="Max SOC")
+    ax2.set_ylabel("SOC (kWh)")
+    ax2.set_xlabel("Local time")
+    ax2.legend(loc="upper right")
+
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    return fig

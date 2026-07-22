@@ -18,40 +18,43 @@ simulation:
   expected_hourly_records: 8760  # non-leap local year
 
 system:
-  # V2 Task 3 (CHECKPOINT, resolved): "none" (off-grid -- reliability is a
-  # hard constraint, smallest-feasible-battery is the objective, a
-  # pass/fail verification is a real check) is the sole V2 study
-  # configuration. Diesel-backed ("diesel": reliability guaranteed by
-  # construction, min-system-LCOE is the objective) remains fully
-  # supported by the code below -- it is V1's documented prior work and is
-  # not re-run in V2, not because it was removed. Off-grid was chosen
-  # because it is the harder, more informative case for the mechanistic-
-  # vs-NN comparison this project is actually about (a real reliability
-  # constraint the NN must also learn to respect), on the explicit
-  # condition that config/scenario_generation.yaml's sampling ranges are
-  # re-tuned so most sampled systems are renewable-adequate BEFORE the
-  # full dataset is generated (see that file's ranges: section) --
-  # otherwise most off-grid scenarios are infeasible by construction (a
-  # seasonal generation/load mismatch no battery within the tested range
-  # can bridge), collapsing the ML task to mostly-infeasible labels.
-  # Threaded through src.physics.optimization.run_battery_search and
-  # src.ai.physical_verification via every caller that builds a scenario
-  # dataset or re-simulates a prediction.
-  backup: none
+  # V2 diesel-hybrid demonstration (post-Task-11 addendum, see
+  # v2/DIESEL_HYBRID_DEMO.md): "diesel" is now this file's DEFAULT/baseline
+  # for a focused, mechanistic-only demonstration showing the diesel
+  # generator actually engaging during low-renewable periods. This is a
+  # DELIBERATE, EXPLICIT change of what this file's baseline represents --
+  # it does NOT retract the completed off-grid study (V2 Task 3 checkpoint):
+  # the full 5,000-scenario off-grid dataset (data/scenarios/full_scenarios.csv),
+  # the trained neural network (models/neural_network_full/), and
+  # reports/technical_report.md all remain valid, already-generated results
+  # of that off-grid study, generated under the PRIOR values of this file
+  # (backup: none, load.target_annual_kwh: 1,600,000) -- they are simply no
+  # longer reproducible by re-running this file's CURRENT baseline values,
+  # exactly as expected when a baseline config is intentionally changed.
+  # "none" (off-grid: reliability a hard constraint, smallest-feasible-
+  # battery the objective) remains fully supported by every function below
+  # -- set this back to "none" (and load: back to the values noted in
+  # DIESEL_HYBRID_DEMO.md) to reproduce the off-grid study exactly.
+  # Regenerating the full scenario dataset and retraining the neural
+  # network under this new diesel-backed baseline is an explicitly
+  # deferred follow-up step, not done as part of this demonstration.
+  backup: diesel
 
 load:
-  # V2 Task 3 checkpoint follow-up (off-grid re-tuning): under off-grid
-  # (system.backup: none above), the diesel-era 3.8 GWh/year baseline
-  # (renewable/load ratio ~1.09) is genuinely infeasible even at the max
-  # 80-module (20,000 kWh) battery -- confirmed empirically, not assumed
-  # (see git history / dev notes). Rescaled down to 1.6 GWh/year so the
-  # baseline sits at ratio ~2.6 (renewable ~4.16 GWh/year at this file's
-  # fixed 1800 kWp PV + 1450 kW wind), which an empirical pilot run
-  # confirmed is off-grid feasible (20 modules, LPSP ~0.94% <= the 1%
-  # target, renewable_share ~99%) -- matching the retuned sampling
-  # envelope below (scenario_generation.yaml's ranges: annual_load_kwh
-  # [800e3, 2.5e6]), not just picked to make this one case pass.
-  target_annual_kwh: 1600000       # 1.6 GWh/year
+  # V2 diesel-hybrid demonstration: raised from the off-grid study's 1.6
+  # GWh/year (renewable/load ratio ~2.6, ~60% of generated renewable energy
+  # curtailed, diesel present but essentially never dispatching) so the
+  # diesel backup actually engages. Renewable/load ratio ~0.92 (annual
+  # renewable ~4.16 GWh/year at this file's fixed 1800 kWp PV + 1450 kW
+  # wind, unchanged) was chosen empirically, not the initially-suggested
+  # ~1.2 (3.0-3.5 GWh/year): that band gave renewable_share 84-89% at the
+  # LCOE-optimal battery -- diesel technically present but barely
+  # contributing. 4.5 GWh/year lands renewable_share at 74.1% / diesel
+  # share 25.9% at the LCOE-optimal battery (24 modules, 6,000 kWh) --
+  # comfortably inside the target 65-85% renewable / 15-35% diesel window,
+  # confirmed by an actual run, not assumed from the annual ratio alone
+  # (renewable share depends on hourly timing, not just annual totals).
+  target_annual_kwh: 4500000       # 4.5 GWh/year
   # V2 Task 4 (load-shape coherence): profile_family is residential_baseline
   # (not industrial_baseline) so the Stage-3 baseline showcase uses the SAME
   # load shape the sampled ML scenario dataset actually uses --
@@ -59,13 +62,13 @@ load:
   # src.ai.features.build_feature_matrix all call generate_load_profile
   # without a profile_family argument, so every sampled scenario has always
   # used the residential_baseline shape regardless of this file's setting
-  # (a real coherence gap in the pre-V2 build). 430kW is the lowest peak at
-  # which 1.6 GWh/year is achievable under residential_baseline's
-  # peak-to-average constraint (achieved peak plateaus at ~426.5 kW, load
-  # factor ~0.43); 430kW sits within scenario_generation.yaml's retuned
-  # peak_load_kw range (150-550kW), so this baseline case remains
-  # representative of the dataset's own sampling envelope.
-  max_hourly_kw: 430
+  # (a real coherence gap in the pre-V2 build, fixed here). 1200kW is the
+  # lowest peak at which 4.5 GWh/year is achievable under
+  # residential_baseline's peak-to-average constraint (achieved peak
+  # plateaus at ~1199.4 kW, load factor ~0.43); sits within
+  # scenario_generation.yaml's diesel-hybrid-demo ranges (peak_load_kw
+  # 700-1,700kW).
+  max_hourly_kw: 1200
   profile_family: residential_baseline
   random_seed: 42
 
@@ -180,17 +183,19 @@ diesel:
   economic_lifetime_years: 15   # typical diesel genset design-life assumption
   project_lifetime_years: 20    # matches battery/PV/wind project lifetime
 
-# Under system.backup: none (V2's off-grid study), primary_lpsp_target IS
-# the hard feasibility gate again (src.physics.optimization.run_battery_search
-# system_backup="none" branch): the objective is the smallest battery meeting
-# this target, and "no candidate within 0-80 modules meets it" is a genuine,
-# honestly-labelled infeasible outcome -- not silently replaced by a
-# maximum-battery guess. Under system.backup: diesel (V1's documented prior
-# work, not re-run in V2), diesel is sized by power (always >= peak load), so
-# LPSP is near-zero for every candidate by construction and the objective is
-# `system_lcoe_eur_per_kwh` minimization instead; these targets are then
-# reported sensitivity metrics, not feasibility gates. See
-# src/physics/optimization.py's module docstring for both configurations.
+# Under system.backup: none (off-grid, the completed V2 Task 3 study),
+# primary_lpsp_target IS the hard feasibility gate
+# (src.physics.optimization.run_battery_search system_backup="none" branch):
+# the objective is the smallest battery meeting this target, and "no
+# candidate within 0-80 modules meets it" is a genuine, honestly-labelled
+# infeasible outcome -- not silently replaced by a maximum-battery guess.
+# Under system.backup: diesel (this file's current baseline -- see the
+# diesel-hybrid-demonstration note under system: above), diesel is sized by
+# power (always >= peak load), so LPSP is near-zero for every candidate by
+# construction and the objective is `system_lcoe_eur_per_kwh` minimization
+# instead; these targets are then reported sensitivity metrics, not
+# feasibility gates. See src/physics/optimization.py's module docstring for
+# both configurations.
 reliability:
   primary_lpsp_target: 0.01  # >= 99% load served -- reported, not a search gate under Path B
   sensitivity_targets_load_served: [0.990, 0.995, 0.999]

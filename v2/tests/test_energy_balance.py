@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 from src.physics.battery import BatterySpec, charge_efficiency, discharge_efficiency
+from src.physics.diesel import DieselSpec, apply_diesel_backup
 from src.physics.dispatch import run_dispatch
 
 TOLERANCE_KWH = 1e-6
@@ -61,6 +62,32 @@ def test_load_side_balance_holds_every_hour(n_modules: int) -> None:
     # load_served_kwh + unserved_kwh must equal the load exactly too.
     residual2 = (result["load_kw"] - (result["load_served_kwh"] + result["unserved_kwh"])).abs()
     assert (residual2 < TOLERANCE_KWH).all()
+
+
+@pytest.mark.parametrize("n_modules", [0, 1, 3, 8])
+def test_load_side_balance_holds_every_hour_with_diesel_backup(n_modules: int) -> None:
+    """Diesel-hybrid demonstration (post-Task-11 addendum): extends the
+    load-side balance check above to include diesel -- load must equal
+    direct renewables + battery discharge + diesel output + any still-
+    unserved residual, every hour, with diesel present."""
+    pv, wind, load = _random_scenario(500, seed=300 + n_modules)
+    battery = _battery(n_modules)
+    dispatch = run_dispatch(pv, wind, load, battery)
+    diesel = DieselSpec(
+        rated_power_kw=10.0, fuel_curve_intercept_l_per_kwh_rated=0.08145,
+        fuel_curve_slope_l_per_kwh_output=0.246, fuel_price_eur_per_l=0.9,
+        installed_cost_eur_per_kw=650, om_cost_fraction_per_year=0.03,
+        economic_lifetime_years=15, project_lifetime_years=20,
+    )
+    with_diesel = apply_diesel_backup(dispatch, diesel)
+
+    accounted = (
+        with_diesel["direct_supply_kwh"] + with_diesel["battery_discharge_kwh"]
+        + with_diesel["diesel_output_kwh"] + with_diesel["still_unserved_kwh"]
+    )
+    residual = (with_diesel["load_kw"] - accounted).abs()
+    assert (residual < TOLERANCE_KWH).all()
+    assert residual.sum() < TOLERANCE_KWH  # annual-scale residual too, not just per-hour
 
 
 @pytest.mark.parametrize("n_modules", [1, 3, 8])

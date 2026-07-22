@@ -1,0 +1,23 @@
+{
+  "annual_load_kwh": 4500000.0,
+  "renewable_generated_kwh": 4156709.9361496363,
+  "renewable_to_load_ratio": 0.9237133191443636,
+  "direct_renewable_to_load_kwh": 2291448.4923474477,
+  "battery_discharge_to_load_kwh": 1043228.5184550802,
+  "diesel_to_load_kwh": 1165322.9891974716,
+  "still_unserved_kwh": 0.0,
+  "curtailed_kwh": 766505.3592998858,
+  "curtailment_pct_of_generated_renewable": 18.44019359238476,
+  "renewable_share_pct": 74.10393357338951,
+  "diesel_share_pct": 25.89606642661048,
+  "lpsp": 0.0,
+  "diesel_operating_hours": 3250,
+  "diesel_fuel_l_per_year": 683549.9677885897,
+  "diesel_rated_power_kw": 1499.2888981291467,
+  "diesel_capacity_factor_pct": 8.872722172415047,
+  "optimal_n_modules": 24,
+  "optimal_capacity_kwh": 6000.0,
+  "system_lcoe_eur_per_kwh": 0.28810706633208727,
+  "max_hourly_energy_balance_residual_kwh": 1.1368683772161603e-13,
+  "annual_energy_balance_residual_kwh": 0.0
+}
