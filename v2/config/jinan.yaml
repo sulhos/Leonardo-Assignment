@@ -1,0 +1,160 @@
+# Baseline site configuration: Jinan, China -- INDUSTRIAL scale.
+# All values here are the project's baseline defaults (PROJECT_BRIEF.md §4-§6),
+# rescaled for the industrial-scale pivot (PROJECT_BRIEF.md Addendum 2, decided
+# after the original residential-scale project was already complete: wind
+# generation is a harder economic case to justify for a single residential
+# site than for an industrial facility with a genuine multi-MW load).
+# This file is consumed by src/config.py; no module should hard-code these values.
+
+site:
+  name: jinan
+  latitude: 36.65
+  longitude: 117.12
+  timezone: Asia/Shanghai
+  elevation_m: 51  # approximate; verify against NASA POWER metadata in Stage 2
+
+simulation:
+  year: 2023
+  expected_hourly_records: 8760  # non-leap local year
+
+load:
+  # Recalibrated after the first Stage 3 run: at the max 5,000 kW combined
+  # PV+wind cap, Jinan's blended capacity factor (~14.8%) caps annual
+  # renewable production at ~6.5 GWh/year -- a 12 GWh/year load was
+  # renewable-inadequate outright (0.28 annual ratio), not just
+  # seasonally mismatched. Rescaled down so the baseline case sits near
+  # annual balance, consistent with the residential project's baseline
+  # (~111% annual coverage, seasonal-timing-limited, not quantity-limited).
+  target_annual_kwh: 3800000       # 3.8 GWh/year
+  max_hourly_kw: 800               # implied load factor ~0.54, consistent with the industrial_baseline profile shape
+  profile_family: industrial_baseline
+  random_seed: 42
+
+pv:
+  capacity_kwp: 1800.0
+  # tilt/azimuth are modelling assumptions, not manufacturer specs. Tilt uses the
+  # common latitude-tilt heuristic (tilt_deg ~= |latitude|), a widely used simple
+  # rule of thumb for a fixed-tilt array optimizing roughly for annual yield --
+  # not a site-specific optimization result.
+  tilt_deg: 36.65        # latitude-tilt heuristic (site latitude)
+  azimuth_deg: 180.0    # equator-facing default for northern hemisphere
+  system_losses_fraction: 0.14  # placeholder PVWatts-style loss assumption; revisit in Stage 2
+  inverter_efficiency: 0.96
+  # Added for the diesel/system-LCOE pivot (PROJECT_BRIEF.md Addendum 3): PV/wind
+  # previously had no cost model at all (only battery was ever being sized/costed).
+  # ~700 EUR/kW = 2024 global utility-scale weighted-average installed cost
+  # (IRENA-style figures, ~$691-779/kW); economic assumption, not a price quote.
+  installed_cost_eur_per_kwp: 700
+  economic_lifetime_years: 25   # typical PV module warranty/economic-life assumption
+  om_cost_fraction_per_year: 0.015  # ~1.5%/year of capital, standard O&M assumption
+
+wind:
+  rated_power_kw: 1450.0  # bumped during Stage 3 recalibration, to push annual renewable coverage to ~111% (mirrors the residential baseline's coverage ratio; see load section note)
+  hub_height_m: 60.0   # utility-class turbine tower height (industrial scale; was 15 m for the residential small-turbine assumption)
+  wind_shear_exponent: 0.14  # generic open-terrain default; document limitation in report
+  cut_in_mps: 2.5
+  rated_mps: 11.0
+  cut_out_mps: 25.0
+  # Course lecture (Task 1b, V2): turbine output is looked up via linear
+  # interpolation on a manufacturer-style speed -> normalized-power-fraction
+  # curve (P_wind(t) = P_rated * interp1(v_hub(t))), not evaluated from a
+  # closed-form cubic ramp formula. This table is a discretized (0.5 m/s
+  # resolution) sampling of this project's own generic cubic ramp between
+  # cut_in_mps and rated_mps -- a defensible generic curve shape (not a
+  # specific certified manufacturer curve), switched to the lecture's
+  # interpolation-based evaluation mechanism. [speed_mps, power_fraction]
+  # pairs; power_fraction is multiplied by rated_power_kw.
+  power_curve_speed_power_fraction:
+    - [0.0, 0.0]
+    - [2.5, 0.0]
+    - [3.0, 0.0086]
+    - [3.5, 0.0207]
+    - [4.0, 0.0368]
+    - [4.5, 0.0574]
+    - [5.0, 0.0832]
+    - [5.5, 0.1146]
+    - [6.0, 0.1523]
+    - [6.5, 0.1969]
+    - [7.0, 0.2489]
+    - [7.5, 0.3088]
+    - [8.0, 0.3774]
+    - [8.5, 0.455]
+    - [9.0, 0.5423]
+    - [9.5, 0.6399]
+    - [10.0, 0.7484]
+    - [10.5, 0.8682]
+    - [11.0, 1.0]
+    - [25.0, 1.0]
+    - [25.01, 0.0]
+    - [50.0, 0.0]
+  # Confirmed via NASA POWER API validation (addendum §1.4, see data/README.md):
+  # the hourly endpoint's WS10M parameter is used as the model input, at 10 m.
+  weather_reference_height_m: 10
+  # Added for the diesel/system-LCOE pivot: ~1,200 EUR/kW, between utility-scale
+  # onshore wind's global weighted average (~1,000 EUR/kW, IRENA) and smaller
+  # commercial-scale systems' higher per-kW cost, since this project's wind range
+  # (200-2,000 kW) sits below utility wind-farm scale. Economic assumption.
+  installed_cost_eur_per_kw: 1200
+  economic_lifetime_years: 20   # typical turbine design-life assumption
+  om_cost_fraction_per_year: 0.025  # ~2.5%/year of capital, standard O&M assumption
+
+battery:
+  chemistry: LFP
+  module_capacity_kwh: 250.0       # containerized industrial/C&I BESS block, not a residential wall-mount unit
+  module_rated_power_kw: 125.0     # 0.5C -- a common commercial BESS duration assumption, modelling assumption not a manufacturer spec
+  round_trip_efficiency: 0.95      # manufacturer spec (approximate), unchanged by scale
+  min_soc_fraction: 0.10           # modelling assumption
+  max_soc_fraction: 0.95           # modelling assumption
+  initial_soc_fraction: 0.50       # modelling assumption
+  # Lecture eq. (Task 1c, V2): SDR in SOC[t] = SOC[t-1]*(1-SDR) + ... Typical
+  # LFP self-discharge is ~2.5%/month; converted to an hourly fraction:
+  # 1 - (1-0.025)^(1/730.5) ~= 3.4658e-5 per hour. Modelling assumption.
+  self_discharge_rate_per_hour: 0.000034658
+  economic_lifetime_years: 10      # economic assumption
+  project_lifetime_years: 20       # economic assumption
+  installed_cost_eur_per_kwh: 300  # economic assumption reflecting C&I/utility-scale economies vs. the residential 550 EUR/kWh figure -- NOT an official price quote
+  cost_sensitivity_eur_per_kwh: [220, 300, 400]
+  candidate_module_counts:
+    min: 0
+    max: 80   # 0-20,000 kWh; rescaled from the residential project's 0-30 (0-460.8 kWh) range
+  temperature_derating:
+    enabled: false  # optional feature; controlled/enclosure temperature assumed initially
+    charge_derating_threshold_c: null
+    discharge_derating_threshold_c: null
+    thermal_management_load_kw: null
+
+# Diesel backup generator (PROJECT_BRIEF.md Addendum 3 -- Path B pivot from a
+# hard-reliability-constrained off-grid system to a diesel-backstopped hybrid
+# system, per the course lecture's OptiCE-style "renewable share vs LCOE"
+# framing). rated_power_kw is NOT set here -- it is computed per-scenario as
+# 1.25 * peak_load_kw (src/physics/diesel.py::diesel_rated_power_kw), matching
+# OptiCE's own Diesel_rated_power sizing rule exactly.
+diesel:
+  sizing_factor: 1.25  # rated_power_kw = sizing_factor * peak_load_kw
+  # HOMER's standard linear fuel curve (F(P) = F0*P_rated + F1*P_output),
+  # widely-cited default coefficients, L/hr/kW -- see src/physics/diesel.py.
+  fuel_curve_intercept_l_per_kwh_rated: 0.08145
+  fuel_curve_slope_l_per_kwh_output: 0.246
+  fuel_price_eur_per_l: 0.90  # ~7 CNY/L, China 2023-2024 average retail diesel price
+  installed_cost_eur_per_kw: 650  # industrial-scale genset installed-cost range ($675-1000/kW); economic assumption
+  om_cost_fraction_per_year: 0.03  # ~3%/year of capital, standard genset O&M assumption
+  economic_lifetime_years: 15   # typical diesel genset design-life assumption
+  project_lifetime_years: 20    # matches battery/PV/wind project lifetime
+
+# Reliability is now a REPORTED metric, not the battery-sizing objective
+# (PROJECT_BRIEF.md Addendum 3): diesel is sized by power (always >= peak
+# load), not energy, so it can in principle serve 100% of the load at any
+# battery capacity, making LPSP near-zero for every candidate by construction.
+# The primary objective is now `system_lcoe_eur_per_kwh` minimization
+# (src/physics/optimization.py). These targets remain as reported sensitivity
+# metrics, not feasibility gates.
+reliability:
+  primary_lpsp_target: 0.01  # >= 99% load served -- reported, not a search gate under Path B
+  sensitivity_targets_load_served: [0.990, 0.995, 0.999]
+
+economics:
+  real_discount_rate: 0.05  # configurable; economic assumption
+
+paths:
+  raw_weather_dir: data/raw
+  processed_weather_dir: data/processed

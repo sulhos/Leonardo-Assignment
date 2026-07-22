@@ -1,0 +1,62 @@
+# Machine-learning scenario dataset generation configuration -- INDUSTRIAL scale
+# (PROJECT_BRIEF.md Addendum 2).
+# See PROJECT_BRIEF.md §14 (ranges) and the refinement addendum §1.1 (staged sizes:
+# pilot 100 -> stretch 500 -> 1000 -> full 5000, re-validating at each step).
+
+dataset_sizes:
+  pilot: 100          # Stage 4 (core scope) — build and validate this first
+  development: 1000   # stretch
+  full: 5000          # stretch — only after incremental re-validation
+
+active_size: pilot  # which of the above this run targets; change explicitly, don't guess
+
+random_seed: 42
+
+# Locations included in scenario generation. Jinan only for the core-scope pilot;
+# Vasteras is added only for the optional geographic-transfer stretch goal.
+locations: [jinan]
+
+# Weather years available for scenario generation. A single year is acceptable for
+# the pilot per addendum §1.1; Experiment B (unseen-weather holdout) requires more
+# than one and is a stretch goal.
+weather_years: [2023]
+
+ranges:
+  pv_capacity_kwp: [500, 3500]
+  wind_capacity_kw: [200, 2000]
+  # Recalibrated after the first Stage 3 run: at the 5,000 kW combined
+  # PV+wind cap below, Jinan's blended capacity factor (~14.8%) caps annual
+  # renewable production at ~6.5 GWh/year. The original [3,000,000,
+  # 21,000,000] range was renewable-inadequate for nearly every scenario
+  # (not just seasonally mismatched), which would produce a dataset
+  # dominated by trivial "too little energy" labels rather than genuine
+  # battery-sizing challenges. Rescaled down so the range brackets the
+  # ~6.5 GWh/year ceiling, matching the residential project's pattern of a
+  # mix of feasible and infeasible (mostly seasonal-timing-limited)
+  # scenarios.
+  annual_load_kwh: [1200000, 6500000]
+  peak_load_kw: [250, 1300]
+  reliability_target_load_served: [0.990, 0.999]
+  round_trip_efficiency: [0.88, 0.97]
+  usable_soc_window_fraction: [0.70, 0.90]
+  # Combined PV+wind nameplate capacity cap for the industrial-scale pivot
+  # (PROJECT_BRIEF.md Addendum 2) -- enforced by
+  # src/scenarios/sampling.py::check_scenario_consistency, not by the
+  # per-technology ranges above alone (their union can exceed this cap).
+  max_combined_pv_wind_capacity_kw: 5000
+
+# Physical-consistency checks applied before accepting a sampled scenario
+# (PROJECT_BRIEF.md §14) — implemented in src/scenarios/sampling.py, not here.
+consistency_checks:
+  enforce_load_peak_compatibility: true
+  enforce_renewable_vs_demand_plausibility: true
+  enforce_combined_pv_wind_capacity_cap: true
+
+candidate_module_counts:
+  min: 0
+  max: 80
+
+execution:
+  parallel: false  # enable once reproducibility under parallel execution is verified
+  resumable_cache: true
+  cache_dir: data/scenarios/.cache
