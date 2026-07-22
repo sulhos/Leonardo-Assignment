@@ -25,19 +25,6 @@ features:
   # as inputs (PROJECT_BRIEF.md §15). Enforced in src/ai/features.py + tests.
   scaler: standard  # fit on training split only
 
-baselines:
-  naive:
-    strategy: median_by_group  # placeholder strategy; finalized in Stage 5
-  linear:
-    model: ridge
-    alpha_grid: [0.01, 0.1, 1.0, 10.0]
-  tree:
-    model: random_forest  # finalized in Stage 5: max_depth_grid's `null` (unlimited depth)
-                           # is natively supported by RandomForestRegressor but not by
-                           # GradientBoostingRegressor (which requires an int max_depth).
-    n_estimators_grid: [100, 300]
-    max_depth_grid: [3, 5, null]
-
 neural_network:
   framework: keras  # pinned per refinement addendum §1.2 — do not mix frameworks in src/ai/
   architecture:

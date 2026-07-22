@@ -1,7 +1,10 @@
-"""Tests for `src.ai.baselines` and `src.ai.evaluation` (Stage 5). Not part
-of the original Stage-1 test-file list, added because these modules have
-real behaviour worth covering. Small deterministic synthetic data, no
-internet access.
+"""Tests for `src.ai.evaluation` (accuracy/operational metrics shared by the
+mechanistic-vs-neural-network comparison). Small deterministic synthetic
+data, no internet access.
+
+(V2 Task 2: the naive/ridge/random-forest baseline models previously tested
+alongside these metrics in this file were removed with `src/ai/baselines.py`
+-- V2's scope is mechanistic vs. neural network only.)
 """
 
 from __future__ import annotations
@@ -10,43 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.ai.baselines import fit_linear_baseline, fit_naive_baseline, fit_tree_baseline
 from src.ai.evaluation import compute_accuracy_metrics, compute_operational_metrics
-
-
-def _linear_dataset(n: int = 60, seed: int = 0):
-    rng = np.random.default_rng(seed)
-    x1 = rng.uniform(0, 10, n)
-    x2 = rng.uniform(0, 5, n)
-    y = 3.0 * x1 - 2.0 * x2 + 10 + rng.normal(0, 0.1, n)
-    X = pd.DataFrame({"x1": x1, "x2": x2})
-    y = pd.Series(y)
-    return X[:40], y[:40], X[40:50], y[40:50], X[50:], y[50:]
-
-
-def test_naive_baseline_predicts_training_median_constant() -> None:
-    X_train, y_train, X_test, _, _, _ = _linear_dataset()
-    model = fit_naive_baseline(X_train, y_train)
-    preds = model.predict(X_test)
-    assert np.allclose(preds, y_train.median())
-
-
-def test_linear_baseline_fits_near_perfect_linear_signal() -> None:
-    X_train, y_train, X_val, y_val, X_test, y_test = _linear_dataset()
-    model = fit_linear_baseline(X_train, y_train, X_val, y_val)
-    preds = model.predict(X_test)
-    mae = np.mean(np.abs(preds - y_test))
-    assert mae < 1.0  # near-linear synthetic data should fit tightly
-
-
-def test_tree_baseline_outperforms_naive_on_clear_signal() -> None:
-    X_train, y_train, X_val, y_val, X_test, y_test = _linear_dataset()
-    naive = fit_naive_baseline(X_train, y_train)
-    tree = fit_tree_baseline(X_train, y_train, X_val, y_val)
-
-    naive_mae = np.mean(np.abs(naive.predict(X_test) - y_test))
-    tree_mae = np.mean(np.abs(tree.predict(X_test) - y_test))
-    assert tree_mae < naive_mae
 
 
 def test_accuracy_metrics_perfect_predictions() -> None:
