@@ -1,0 +1,46 @@
+# Mirrors the repo root .gitignore, scoped to v2/ (gitignore path patterns
+# with a slash are anchored to the directory containing the .gitignore file,
+# so the root file's data/ml_dataset/* etc. patterns do not reach into v2/).
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Environment / secrets
+.env
+
+# data/scenarios (the actual pilot/dev/full scenario datasets) and outputs/*
+# (result tables and figures) ARE committed: they are explicit deliverables
+# backed by real, sometimes expensive (~minutes) exhaustive mechanistic
+# search, not cheaply re-downloadable. Only the resumable per-run cache and
+# the engineered feature matrix (regenerable in ~5 minutes from
+# data/scenarios/*.csv via scripts/build_features.py) stay ignored.
+data/scenarios/.cache/
+data/ml_dataset/*
+!data/ml_dataset/.gitkeep
+
+# Trained models: the neural network's saved checkpoint + preprocessing
+# objects ARE committed (small) so downstream analysis/notebooks can load
+# them directly without retraining.
+
+# Ephemeral run logs only.
+outputs/logs/*
+!outputs/logs/.gitkeep
