@@ -111,3 +111,36 @@ rounded-up recommendations would not have met the reliability target
 without it. Used together — AI for fast exploration, physics-based
 simulation for final confirmation — this gives the best of both: speed
 during design, and confidence before construction.
+
+## A follow-on question: what if we add a backup generator?
+
+Everything above describes a fully off-grid system — no backup generator,
+so the battery has to be big enough to survive every bad week on its own.
+That's why the solar and wind panels had to be built so much larger than
+the actual demand: about 60% of all the power they generated over the
+year was simply thrown away (curtailed), because there was nowhere to put
+it once the battery was full.
+
+As a follow-on check, we turned the diesel backup generator on and
+increased the electricity demand so it's better matched to what the solar
+and wind can produce. With a generator to fall back on, the system doesn't
+need a battery big enough to survive on its own — it just needs a battery
+big enough to be the *cheapest* combination of battery and generator fuel.
+
+The results: with a 24-battery-unit system (6,000 kWh), solar and wind
+cover **74%** of the electricity used over the year, the generator covers
+the other 26%, and far less power goes to waste — down from 60% curtailed
+to 18%. We also checked, battery size by battery size, where the sweet
+spot is: **adding battery is worth it up to about 74% renewable power.**
+Below that point, every bit of battery you add saves more in generator
+fuel than it costs. Beyond that point, it flips — the last bit of battery
+capacity mostly sits idle waiting for rare, extreme weeks, and costs more
+than the fuel it saves. Pushing renewable coverage from 74% up toward 80%
+this way would cost about 30% more per unit of electricity than stopping
+at the sweet spot, for only a small gain in renewable share.
+
+This is a separate, smaller check — it did not retrain the AI model or
+regenerate the full 5,000-system dataset described above, both of which
+remain valid results of the off-grid study. It answers a different,
+narrower question: for a hybrid system with a generator as backup, how
+much battery is actually worth paying for.

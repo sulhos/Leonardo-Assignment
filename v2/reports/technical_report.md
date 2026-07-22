@@ -11,7 +11,7 @@ the Management of Microgrids*, OptiCE slide deck), a narrower and stricter
 comparison scope (mechanistic vs. neural network only — no other machine-
 learning baselines), and a return to an **off-grid** system configuration
 (a hard reliability constraint, no diesel backup), reversing V1's later
-diesel-backed pivot. Section 15 details exactly why, and what the
+diesel-backed pivot. Section 9 details exactly why, and what the
 consequence was for the scenario dataset.
 
 Everything in this report is generated from real, executed code against
@@ -20,6 +20,11 @@ V1 build (documented separately, `reports/` at the repository root)
 remains the historical record of the diesel-backed, four-model comparison;
 this report supersedes it only in scope (off-grid, NN-only), not in
 validity — V1's results still describe V1's own configuration correctly.
+
+Section 19 adds a follow-on demonstration: switching the diesel backup
+back on and raising the load, to show the diesel engaging and to trace the
+renewable-share-vs-system-LCOE trade-off curve. It is mechanistic-only and
+does not alter or retract §1–§18's off-grid results.
 
 ## 2. Relationship to V1
 
@@ -471,3 +476,124 @@ correlations. Battery cost materially affects system economics
 (33–45% of total system cost across a realistic price range) without
 changing which battery size is selected, since off-grid sizing is driven
 by the reliability constraint alone, not cost.
+
+## 19. Follow-On Demonstration: Switching the Diesel Backup On (Diesel-Hybrid)
+
+**Scope**: a focused, mechanistic-only follow-on to the off-grid study
+above (§1–§18), added after this report's initial completion. Does not
+retrain the neural network or regenerate the full 5,000-scenario dataset
+— the off-grid dataset, trained model, and every result in §1–§18 above
+remain untouched and valid, generated under the *prior* values of
+`config/jinan.yaml`/`config/scenario_generation.yaml` documented in
+`v2/DIESEL_HYBRID_DEMO.md` and in those files' own comments.
+
+### 19.1 Motivation
+
+The off-grid study left the diesel generator present in the code
+(`src/physics/diesel.py`) but never dispatching: to meet a 99%
+reliability target with only a small daily-cycling battery, PV and wind
+had to be massively over-built relative to load (renewable/load ratio
+~2.6), so roughly **60% of all generated renewable energy was curtailed**,
+and diesel — sized at 1.25× peak load in every configuration — never
+actually ran. This section switches `system.backup` to `"diesel"` and
+raises the baseline load so the diesel backup visibly engages, producing
+a realistic hybrid PV + wind + battery + diesel system and tracing the
+classic renewable-share-vs-system-LCOE trade-off curve the course
+lecture's OptiCE material describes.
+
+### 19.2 What changed
+
+`config/jinan.yaml`: `system.backup` (`none` → `diesel`), load raised from
+1.6 to **4.5 GWh/year** at **1,200 kW** peak (PV 1,800 kWp and wind
+1,450 kW unchanged — only load was raised). `config/scenario_generation.yaml`:
+sampling ranges for `annual_load_kwh`/`peak_load_kw` widened to bracket
+the new baseline, for a possible future full-dataset regeneration (not
+done as part of this demonstration).
+
+The originally-targeted 3.0–3.5 GWh/year (renewable/load ratio ~1.2) was
+tested first and gave only 11–16% diesel share — too faint a
+demonstration. Six load levels were tested empirically against the actual
+LCOE-optimal battery search (renewable share depends on hourly timing, not
+just the annual ratio, so this had to be checked by running the optimizer,
+not assumed):
+
+| Annual load | Achieved peak | Renewable/load ratio | Renewable share | Diesel share |
+|---|---|---|---|---|
+| 3.0 GWh | 800 kW | 1.39 | 89.2% | 10.8% |
+| 3.5 GWh | 933 kW | 1.19 | 84.0% | 16.0% |
+| 4.0 GWh | 1,066 kW | 1.04 | 79.1% | 20.9% |
+| **4.5 GWh** | **1,199 kW** | **0.92** | **74.1%** | **25.9%** |
+| 5.0 GWh | 1,333 kW | 0.83 | 69.4% | 30.6% |
+
+4.5 GWh/year was chosen as a clean, mid-window value.
+
+### 19.3 Results
+
+Computed by `scripts/diesel_hybrid_demo.py` (a real run, not projected):
+
+| Metric | Value |
+|---|---|
+| LCOE-optimal battery | 24 modules · 6,000 kWh |
+| System LCOE at optimum | 0.288 EUR/kWh |
+| Renewable share / diesel share | 74.1% / 25.9% |
+| Curtailment (of generated renewable energy) | 18.4% (down from ~60% off-grid) |
+| Diesel operating hours | 3,250 / 8,760 (37.1% of the year) |
+| Diesel fuel consumption | 683,550 L/year |
+| Diesel capacity factor | 8.87% |
+| LPSP | 0.0 (diesel guarantees reliability by construction) |
+| Energy balance residual (annual) | 0.0 kWh (verified exactly, every hour) |
+
+![Diesel engaging during a low-renewable week (Dec 25-31, 2023): renewables dip well below load, battery SOC sits near its floor almost the entire time, diesel fills the gap for most hours](../outputs/figures/11_diesel_engagement_week.png)
+
+![Annual energy-flow balance with diesel backup: renewable production (direct supply + battery charge + curtailed) and load service (direct supply + battery discharge + diesel), zero still-unserved](../outputs/figures/12_energy_flow_balance_diesel_hybrid.png)
+
+Energy balance was verified exactly: `load_kw` = `direct_supply_kwh` +
+`battery_discharge_kwh` + `diesel_output_kwh` + `still_unserved_kwh`,
+every hour of the 8,760-hour year, annual residual 0.0 kWh. A new
+parametrized test
+(`tests/test_energy_balance.py::test_load_side_balance_holds_every_hour_with_diesel_backup`)
+covers this for battery sizes 0/1/3/8 modules; the full suite (177 tests)
+passes.
+
+### 19.4 Where does more battery stop paying for itself?
+
+The full 0–80-module candidate sweep traces a clean U-shaped
+(backward-bending) curve, exactly the OptiCE "renewable share vs. LCOE"
+shape the course lecture material describes:
+
+| Point | Modules | Battery capacity | System LCOE | Renewable share |
+|---|---|---|---|---|
+| Diesel-only (no battery) | 0 | 0 kWh | 0.346 EUR/kWh | 50.9% |
+| **LCOE-minimizing (the search's own optimum)** | **24** | **6,000 kWh** | **0.288 EUR/kWh** | **74.1%** |
+| Maximum tested battery | 80 | 20,000 kWh | 0.374 EUR/kWh | 80.4% |
+
+![Renewable share vs. system LCOE across the full 0-80 module candidate sweep, sweet spot marked at the minimum-LCOE point](../outputs/figures/13_renewable_share_vs_lcoe.png)
+
+![Battery capacity vs. system LCOE, same sweep: a clean U-shape with the minimum at 6,000 kWh](../outputs/figures/14_battery_capacity_vs_lcoe.png)
+
+Starting from diesel-only, each added battery module saves more in diesel
+fuel than it costs in capital — system LCOE falls 17% (0.346 → 0.288
+EUR/kWh) as renewable share climbs from 50.9% to 74.1%. Past 24 modules,
+the relationship flips: each additional module's capital cost now exceeds
+what it saves in fuel, because the *marginal* battery capacity is mostly
+covering rarer and rarer high-deficit hours rather than displacing routine
+diesel runtime. Pushing all the way to the 80-module cap buys only another
+6.3 percentage points of renewable share (74.1% → 80.4%) but costs 30%
+more (0.374 EUR/kWh) than the optimum — a much worse trade than the first
+24 modules delivered.
+
+**Answer to "at which point is renewable share beneficial, and at what
+level does it become expensive": renewable share is worth paying for up to
+~74% in this system; beyond that, each additional percentage point of
+renewable share costs markedly more per kWh delivered.**
+
+### 19.5 What this does not do
+
+The off-grid dataset (4,526/5,000 feasible scenarios), the trained neural
+network, and every number in §1–§18 above are untouched — they remain
+valid results of the completed off-grid study, generated under that
+study's own configuration values, not this section's. No new full-scale
+scenario dataset was generated under the diesel-hybrid ranges, and the
+neural network was not retrained on one; both remain explicitly deferred
+follow-up work. See `v2/DIESEL_HYBRID_DEMO.md` for the complete write-up,
+including the full six-load-level sweep and reproduction instructions.
