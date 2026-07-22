@@ -776,3 +776,44 @@ def plot_diesel_engagement_week(
     fig.autofmt_xdate()
     fig.tight_layout()
     return fig
+
+
+def plot_optimal_modules_by_cost(cost_sensitivity: pd.DataFrame) -> plt.Figure:
+    """Box plot of optimal_n_modules grouped by battery_cost_eur_per_kwh
+    (diesel-hybrid Part F): unlike the off-grid case, where battery cost
+    changes reported LCOE but never the selected candidate, under diesel
+    min-LCOE the optimal battery genuinely shifts with cost -- this figure
+    shows that shift directly, not just its economic consequence."""
+    costs = sorted(cost_sensitivity["battery_cost_eur_per_kwh"].unique())
+    data = [cost_sensitivity.loc[cost_sensitivity["battery_cost_eur_per_kwh"] == c, "optimal_n_modules"] for c in costs]
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.boxplot(data, tick_labels=[f"{c:.0f}" for c in costs], showmeans=True)
+    ax.set_xlabel("Battery installed cost (EUR/kWh)")
+    ax.set_ylabel("Optimal battery (modules)")
+    ax.set_title("Optimal Battery Size Shifts with Battery Cost (Diesel Min-LCOE)")
+    fig.tight_layout()
+    return fig
+
+
+def plot_lean_on_diesel_diagnostic(verification: pd.DataFrame) -> plt.Figure:
+    """Scatter of AI-predicted vs. reference battery-alone LPSP (renewables
+    + battery, without diesel) -- the diesel-era reliability diagnostic
+    that replaces the off-grid pass/fail check, now that reliability is
+    near-100% by construction. Points above the y=x line lean on diesel
+    more than the true optimum would; points below lean on it less."""
+    fig, ax = plt.subplots(figsize=(6, 6))
+    lims = [0, max(verification["verified_lpsp_battery_alone"].max(), verification["reference_lpsp_battery_alone"].max()) * 1.05]
+    ax.plot(lims, lims, color="grey", linestyle="--", linewidth=1, label="y = x (matches optimum)")
+    ax.scatter(
+        verification["reference_lpsp_battery_alone"], verification["verified_lpsp_battery_alone"],
+        color="darkorange", edgecolor="white", s=40, alpha=0.6,
+    )
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    ax.set_xlabel("Reference: LPSP renewables+battery alone would achieve")
+    ax.set_ylabel("AI prediction: LPSP renewables+battery alone would achieve")
+    ax.set_title("How Much Does the AI's Choice Lean on Diesel vs. the True Optimum?")
+    ax.legend(loc="upper left")
+    fig.tight_layout()
+    return fig
