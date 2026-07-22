@@ -27,9 +27,9 @@ FIXED_SEED = 42
 REQUESTED_SIZES = [100, 250, 500, 1000, 2000, 3500]
 
 
-def run() -> pd.DataFrame:
+def run(dataset_name: str = "full") -> pd.DataFrame:
     ml_cfg = load_yaml_config("ml_training")
-    merged, feature_cols = load_merged_dataset()
+    merged, feature_cols = load_merged_dataset(dataset_name)
     splits = split_dataset(merged, FIXED_SEED, ml_cfg)
     full_train_idx = splits["train"]
     n_train_available = len(full_train_idx)
@@ -57,7 +57,7 @@ def run() -> pd.DataFrame:
     results = pd.DataFrame(rows)
     out_dir = REPO_ROOT / "outputs/tables"
     out_dir.mkdir(parents=True, exist_ok=True)
-    results.to_csv(out_dir / "learning_curve_neural_network_full.csv", index=False)
+    results.to_csv(out_dir / f"learning_curve_neural_network_{dataset_name}.csv", index=False)
     return results
 
 

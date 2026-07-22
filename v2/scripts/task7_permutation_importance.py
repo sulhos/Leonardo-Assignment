@@ -29,20 +29,20 @@ FIXED_SEED = 42
 N_REPEATS = 10
 
 
-def run() -> pd.DataFrame:
+def run(dataset_name: str = "full") -> pd.DataFrame:
     ml_cfg = load_yaml_config("ml_training")
-    merged, feature_cols = load_merged_dataset()
+    merged, feature_cols = load_merged_dataset(dataset_name)
     splits = split_dataset(merged, FIXED_SEED, ml_cfg)
     test = merged.loc[splits["test"]]
 
-    preprocessing = load_preprocessing_objects(REPO_ROOT / "models/preprocessing_full")
+    preprocessing = load_preprocessing_objects(REPO_ROOT / f"models/preprocessing_{dataset_name}")
     scaler = preprocessing["scaler"]
     saved_feature_cols = preprocessing["feature_columns"]
     assert saved_feature_cols == feature_cols, "feature column order mismatch vs. saved preprocessing"
 
     model = load_trained_model(
         n_features=len(feature_cols), config=ml_cfg["neural_network"],
-        weights_path=REPO_ROOT / "models/neural_network_full/best_model.weights.h5",
+        weights_path=REPO_ROOT / f"models/neural_network_{dataset_name}/best_model.weights.h5",
     )
 
     test_x_scaled = pd.DataFrame(
@@ -74,7 +74,7 @@ def run() -> pd.DataFrame:
 
     out_dir = REPO_ROOT / "outputs/tables"
     out_dir.mkdir(parents=True, exist_ok=True)
-    results.to_csv(out_dir / "permutation_importance_neural_network_full.csv", index=False)
+    results.to_csv(out_dir / f"permutation_importance_neural_network_{dataset_name}.csv", index=False)
     return results
 
 

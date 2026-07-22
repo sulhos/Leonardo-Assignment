@@ -23,9 +23,9 @@ N_REPEATS = 10
 SEEDS = list(range(N_REPEATS))
 
 
-def run() -> pd.DataFrame:
+def run(dataset_name: str = "full") -> pd.DataFrame:
     ml_cfg = load_yaml_config("ml_training")
-    merged, feature_cols = load_merged_dataset()
+    merged, feature_cols = load_merged_dataset(dataset_name)
 
     rows = []
     for seed in SEEDS:
@@ -44,8 +44,8 @@ def run() -> pd.DataFrame:
 
     out_dir = REPO_ROOT / "outputs/tables"
     out_dir.mkdir(parents=True, exist_ok=True)
-    results.to_csv(out_dir / "cross_validation_runs_neural_network_full.csv", index=False)
-    summary.to_csv(out_dir / "cross_validation_summary_neural_network_full.csv")
+    results.to_csv(out_dir / f"cross_validation_runs_neural_network_{dataset_name}.csv", index=False)
+    summary.to_csv(out_dir / f"cross_validation_summary_neural_network_{dataset_name}.csv")
     return results
 
 
