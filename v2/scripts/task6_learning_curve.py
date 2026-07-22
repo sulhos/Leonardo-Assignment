@@ -62,4 +62,5 @@ def run(dataset_name: str = "full") -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+    run(dataset_name=sys.argv[1] if len(sys.argv) > 1 else "full")
