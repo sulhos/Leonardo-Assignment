@@ -703,83 +703,45 @@ Mechanistic search runtime: ~6.3 ms/candidate (81 candidates, 0.51 s total) — 
 
 ## 15. AI-Model Results
 
+This section focuses on the neural network's own accuracy against the
+mechanistic reference, at pilot and full scale — the comparison this
+report's research questions center on (§3). Three simpler baseline models
+(naive, Ridge, Random Forest) were also implemented and evaluated in
+parallel, as PROJECT_BRIEF.md requires (§11); their full results are not
+repeated in-line here but are reported in full in Appendix A, exactly as
+run, and referenced below wherever they provide useful context for the
+neural network's own result.
+
 ### 15.1 Pilot (Stage 5/6, 100-scenario dataset)
 
-Test-split (16 scenarios, 70/14/16 split — 100/100 feasible per Addendum 3)
-accuracy for all four models predicting `optimal_capacity_kwh` (naive/Ridge/
-Random Forest from Stage 5, MLP from Stage 6):
+Test-split (16 scenarios, 70/14/16 split — 100/100 feasible per Addendum 3),
+predicting `optimal_capacity_kwh`:
 
 | Model | MAE (kWh) | RMSE (kWh) | R² | Bias (kWh) | % within 20% |
 |---|---|---|---|---|---|
-| Naive (median) | 1,328.1 | 1,481.7 | -0.042 | 296.9 | 25.0% |
-| Ridge | 233.6 | 324.0 | 0.950 | 82.7 | 100.0% |
-| Random Forest | 227.3 | 312.1 | 0.954 | -36.8 | 93.75% |
 | Neural Network (MLP) | 2,021.2 | 2,602.9 | -2.215 | -1,824.8 | 31.25% |
-
-Operational (under/over-prediction, reported separately from averaged accuracy
-per §21):
-
-| Model | Underprediction rate | Mean underprediction (kWh) | Overprediction rate | Mean overprediction (kWh) |
-|---|---|---|---|---|
-| Naive | 37.5% | 1,375.0 | 62.5% | 1,300.0 |
-| Ridge | 37.5% | 201.1 | 62.5% | 253.0 |
-| Random Forest | 50.0% | 264.1 | 50.0% | 190.5 |
-| Neural Network | 75.0% | 2,564.0 | 25.0% | 393.0 |
 
 Read honestly, not triumphantly — and this pilot's honest result is
 unflattering to the neural network. The neural network has the worst
-accuracy on every metric (Figure 21), including a negative R² worse than the
-naive baseline's. §12 already showed why: 70 training rows is not enough data
-for a 15,233-parameter network at this problem's noise level — a textbook
-overparameterized regime. This is reported as the actual, unmanipulated
-outcome of this particular split and this particular (small) dataset — not
-re-run, not tuned, and not omitted because it doesn't flatter the neural
-network. It is exactly the kind of small-sample result the refinement
-addendum's "test the hypothesis, don't assume the NN wins" instruction exists
-to surface, and it underscores why Stage 8/9's full-scale re-run (§15.2)
-matters: one 16-sample test split is not enough evidence to conclude the
-neural network is worse at this task in general, only that it is worse *on
-this split, at this training set size*.
+accuracy of all four models evaluated (Appendix A, Table A1), including a
+negative R² worse than a naive median predictor's. §12 already showed why:
+70 training rows is not enough data for a 15,233-parameter network at this
+problem's noise level — a textbook overparameterized regime. This is
+reported as the actual, unmanipulated outcome of this particular split and
+this particular (small) dataset — not re-run, not tuned, and not omitted
+because it doesn't flatter the neural network. It is exactly the kind of
+small-sample result the refinement addendum's "test the hypothesis, don't
+assume the NN wins" instruction exists to surface, and it underscores why
+Stage 8/9's full-scale re-run (§15.2) matters: one 16-sample test split is
+not enough evidence to conclude the neural network is worse at this task in
+general, only that it is worse *on this split, at this training set size*.
 
-The predicted-vs-true scatter for each model (Figure 17a-d) shows this
-directly: Ridge and Random Forest's points hug the diagonal closely, while the
-neural network's scatter visibly off it. The corresponding residual
-distributions (Figure 18a-d) tell the same story from a different angle — Ridge and Random Forest's errors cluster tightly near zero, the naive
-baseline's are widely spread since it predicts one flat value regardless of
-scenario, and the neural network's are the widest and least centered of the
-four. Figure 23 breaks accuracy down further into over- vs. under-prediction
-rate per model, reported separately rather than folded into one blended
-number, per PROJECT_BRIEF.md §21.
-
-![MAE/RMSE comparison across all four models, pilot scale](../outputs/figures/21_metric_comparison.png)
-*Figure 21 — MAE/RMSE by model, pilot. Ridge and Random Forest lead; the neural network trails even the naive baseline.*
-
-![Predicted vs. reference capacity, Ridge, pilot test split](../outputs/figures/17_predicted_vs_reference_ridge.png)
-*Figure 17a — Ridge: predicted vs. true capacity, pilot test split (n=16). Points hug the diagonal.*
-
-![Predicted vs. reference capacity, Random Forest, pilot test split](../outputs/figures/17_predicted_vs_reference_random_forest.png)
-*Figure 17b — Random Forest: predicted vs. true capacity, pilot test split.*
-
-![Predicted vs. reference capacity, naive baseline, pilot test split](../outputs/figures/17_predicted_vs_reference_naive.png)
-*Figure 17c — Naive median baseline: predicted vs. true capacity, pilot test split.*
-
-![Predicted vs. reference capacity, neural network, pilot test split](../outputs/figures/17_predicted_vs_reference_neural_network.png)
-*Figure 17d — Neural network: predicted vs. true capacity, pilot test split. Visibly the worst fit of the four.*
-
-![Residual distribution, Ridge, pilot](../outputs/figures/18_residuals_ridge.png)
-*Figure 18a — Ridge residuals, tightly clustered near zero.*
-
-![Residual distribution, Random Forest, pilot](../outputs/figures/18_residuals_random_forest.png)
-*Figure 18b — Random Forest residuals, similarly tight clustering.*
-
-![Residual distribution, naive baseline, pilot](../outputs/figures/18_residuals_naive.png)
-*Figure 18c — Naive baseline residuals, wide spread.*
-
-![Residual distribution, neural network, pilot](../outputs/figures/18_residuals_neural_network.png)
-*Figure 18d — Neural network residuals: widest, least-centered spread of the four.*
-
-![Over-/under-prediction rates by model, pilot](../outputs/figures/23_over_under_prediction.png)
-*Figure 23 — Over-/under-prediction rates by model, reported separately per PROJECT_BRIEF.md §21.*
+The neural network's predicted-vs-true scatter (Appendix A, Figure A5) and
+residual distribution (Appendix A, Figure A9) are both visibly worse than
+the other three models' at pilot scale — off-diagonal and widely spread,
+respectively — the same finding as the table above, shown visually.
+Appendix A also reports over-/under-prediction rates separately from
+averaged accuracy (PROJECT_BRIEF.md §21) for all four models.
 
 Full tables: `outputs/tables/accuracy_metrics_by_model.csv`,
 `reliability_metrics_by_model.csv`, `runtime_comparison_stage5.csv`.
@@ -795,33 +757,22 @@ and clipped to zero before conversion to installable modules (PROJECT_BRIEF.md
 
 | Model | MAE (kWh) | RMSE (kWh) | R² | Bias (kWh) | % within 20% |
 |---|---|---|---|---|---|
-| Naive (median) | 1,338.9 | 1,726.2 | -0.054 | -390.1 | 31.7% |
-| Ridge | 237.7 | 338.3 | 0.960 | -4.7 | 93.5% |
-| Random Forest | 118.7 | 189.5 | 0.987 | -2.1 | 98.3% |
 | Neural Network (MLP) | 98.6 | 138.6 | 0.993 | -8.8 | 99.2% |
 
-Operational metrics (751 test scenarios):
-
-| Model | Underprediction rate | Mean underprediction (kWh) | Overprediction rate | Mean overprediction (kWh) |
-|---|---|---|---|---|
-| Naive | 47.5% | 1,818.6 | 46.5% | 1,020.8 |
-| Ridge | 51.1% | 237.0 | 48.9% | 238.4 |
-| Random Forest | 49.0% | 123.2 | 49.4% | 118.1 |
-| Neural Network | 51.1% | 105.1 | 48.9% | 91.9 |
-
-At 751 test scenarios (vs. the pilot's 16), the accuracy ranking completely
-reverses relative to the pilot: naive < Ridge < Random Forest < neural
-network, with the neural network now clearly *best* (R² 0.993, MAE less than
-Random Forest's) rather than clearly worst. The pilot's neural network result
-was not a subtle small-sample wobble around an otherwise-consistent ranking,
-it was the complete opposite ranking, driven by a training set (70 rows) too
-small for this architecture to learn from at all. At 3,500 training rows, the
-same architecture and hyperparameters (unchanged, no tuning) produce the
-best-performing model of the four by a wide margin. See §16 for whether this
-accuracy improvement is matched by an economic-cost improvement. The
-full-scale training run's loss curve (Figure 16, full-scale version) shows a
-clean, non-diverging convergence — a visible contrast to the pilot's
-overparameterized-regime curve (Figure 16, pilot version, §12).
+At 751 test scenarios (vs. the pilot's 16), the neural network's accuracy
+ranking against the other three models (Appendix A, Table A3) completely
+reverses relative to the pilot: it goes from clearly *worst* to clearly
+*best* (R² 0.993, ahead of the strongest baseline, Random Forest). The
+pilot's neural network result was not a subtle small-sample wobble around
+an otherwise-consistent ranking, it was the complete opposite ranking,
+driven by a training set (70 rows) too small for this architecture to
+learn from at all. At 3,500 training rows, the same architecture and
+hyperparameters (unchanged, no tuning) produce the best-performing model of
+the four by a wide margin. See §16 for whether this accuracy improvement is
+matched by an economic-cost improvement. The full-scale training run's loss
+curve (Figure 16, full-scale version) shows a clean, non-diverging
+convergence — a visible contrast to the pilot's overparameterized-regime
+curve (Figure 16, pilot version, §12).
 
 ![Full-scale MLP training/validation loss curve, 209 epochs, 5,000-scenario dataset](../outputs/figures/16_training_validation_loss_full.png)
 *Figure 16 (full-scale) — Training/validation loss, 3,500-row training set. Early stopping at epoch 209, best epoch 188.*
@@ -864,36 +815,23 @@ stored summary statistics (§8, §13).
 
 | Model | Mean extra system LCOE (EUR/kWh) | Reliability pass rate | % undersized | % oversized | Additional cost from oversizing (EUR/yr) |
 |---|---|---|---|---|---|
-| Naive | 0.0217 | 100% | 37.5% | 62.5% | 362,363 |
-| Ridge | 0.0013 | 100% | 12.5% | 62.5% | 36,266 |
-| Random Forest | 0.0016 | 100% | 18.75% | 50.0% | 26,350 |
 | Neural Network | 0.0361 | 100% | 68.75% | 25.0% | 53,143 |
 
 This is the headline, mandatory-check result of the whole project at pilot
 scale — and here it is unambiguous, not subtle. Reliability pass rate is
-100% for every model (Figure 22), exactly as expected: diesel makes
-reliability near-universal by construction (§8), so it no longer
+100% for every model (Appendix A, Table A5), exactly as expected: diesel
+makes reliability near-universal by construction (§8), so it no longer
 discriminates between models the way it did under the pre-diesel design.
-The metric that discriminates is mean extra system LCOE (Figure 29), and
-it tells the same story as §15.1's accuracy table: the neural network's
-predictions would make the system 0.0361 EUR/kWh more expensive than the
-true optimum on average — worse than even the naive median baseline (0.0217
-EUR/kWh) — while Ridge (0.0013) and Random Forest (0.0016) cost almost
-nothing extra. This is a direct, continuous economic consequence of the
-accuracy gap documented in §15.1, not a separate finding: 68.75% of the
-neural network's predictions undersize the battery (11 of 16 scenarios), each
-one paying a real LCOE penalty even though diesel means none of them
-actually go unserved. Figure 26 breaks the additional-cost side of that
-penalty down by model specifically for the oversizing cases.
-
-![Mean extra system LCOE from trusting each model's prediction, pilot scale](../outputs/figures/29_extra_lcoe_by_model.png)
-*Figure 29 (pilot) — Mean extra system LCOE by model. Neural network worst (0.0361 EUR/kWh); Ridge/Random Forest cheapest.*
-
-![Reliability pass rate by model, pilot](../outputs/figures/22_reliability_pass_rate.png)
-*Figure 22 (pilot) — Reliability pass rate: 100% for every model, since diesel guarantees it.*
-
-![Cost penalty from AI oversizing, pilot](../outputs/figures/26_cost_penalty_oversizing.png)
-*Figure 26 (pilot) — Additional annualized system cost from oversizing, by model.*
+The metric that discriminates is mean extra system LCOE, and it tells the
+same story as §15.1's accuracy table: the neural network's predictions
+would make the system 0.0361 EUR/kWh more expensive than the true optimum
+on average — worse than every one of the three baselines tested in
+parallel (Appendix A, Table A5), the cheapest of which cost almost nothing
+extra. This is a direct, continuous economic consequence of the accuracy
+gap documented in §15.1, not a separate finding: 68.75% of the neural
+network's predictions undersize the battery (11 of 16 scenarios), each one
+paying a real LCOE penalty even though diesel means none of them actually
+go unserved.
 
 Full per-scenario verification tables: `outputs/tables/physical_verification_{model}.csv`.
 Summary: `physical_verification_summary_by_model.csv`.
@@ -907,48 +845,36 @@ the mechanistic-optimal reference size.
 
 | Model | Mean extra system LCOE (EUR/kWh) | Reliability pass rate | % undersized | % oversized | Additional cost from oversizing (EUR/yr) |
 |---|---|---|---|---|---|
-| Naive | 0.0145 | 100% | 47.5% | 46.5% | 6,785,771 |
-| Ridge | 0.0008 | 100% | 18.5% | 48.9% | 967,150 |
-| Random Forest | 0.0003 | 100% | 5.3% | 49.4% | 459,996 |
 | Neural Network | 0.0003 | 100% | 3.3% | 48.9% | 431,251 |
 
-This full-scale result (Figure 29, full-scale version) completely reverses
-the pilot's finding. At 16 test scenarios (§16.1), the neural network's
-predictions were the *most* expensive of the four models to trust (0.0361
-EUR/kWh extra, worse than naive). At 751 test scenarios, the neural network
-is statistically tied with Random Forest for cheapest to trust (0.0003
-EUR/kWh extra for both — both essentially free relative to the true
-optimum), while naive costs a real 0.0145 EUR/kWh extra and Ridge sits in
-between (0.0008). Reliability pass rate stays at 100% for every model at
-every scale (Figure 22, full-scale version), since diesel guarantees it by
-construction (§8) regardless of prediction quality — it never discriminates
-between models, which is exactly why extra system LCOE is the metric that
-carries the verdict here, not reliability pass rate the way it did under the
-pre-diesel design. The pilot's result was not wrong to report at the time — with 70 training rows, the neural network genuinely had not learned a usable
-model — but the underlying model quality (3,500 training rows vs. 70), not a
+This full-scale result completely reverses the pilot's finding. At 16 test
+scenarios (§16.1), the neural network's predictions were the *most*
+expensive of the four models to trust (0.0361 EUR/kWh extra, worse than
+naive). At 751 test scenarios, the neural network is statistically tied
+with Random Forest for cheapest to trust — both essentially free relative
+to the true optimum, against a real 0.0145 EUR/kWh extra for naive
+(Appendix A, Table A6). Reliability pass rate stays at 100% for every
+model at every scale, since diesel guarantees it by construction (§8)
+regardless of prediction quality — it never discriminates between models,
+which is exactly why extra system LCOE is the metric that carries the
+verdict here, not reliability pass rate the way it did under the pre-diesel
+design. The pilot's result was not wrong to report at the time — with 70
+training rows, the neural network genuinely had not learned a usable model
+— but the underlying model quality (3,500 training rows vs. 70), not a
 statistical fluke, is what changed between pilot and full scale.
 
 The neural network's undersizing rate falls from 68.75% at pilot scale to
-3.3% at full scale, the largest such drop of any model, and its additional
-cost from oversizing (Figure 26, full-scale version: EUR 431,251/yr summed
-across 751 verified scenarios) is the lowest of the four, edging out Random
-Forest's EUR 459,996/yr. Every model's oversizing rate stays close to 50% at
-full scale, a stable pattern independent of accuracy — oversizing and
-undersizing rates trade off against each other as accuracy improves (the
-neural network's combined error rate shrinks, but the remaining errors split
-roughly evenly in direction), rather than oversizing disappearing outright.
+3.3% at full scale, the largest such drop of any model tested (Appendix A),
+and its additional cost from oversizing (EUR 431,251/yr summed across 751
+verified scenarios) is the lowest of the four. Every model's oversizing
+rate stays close to 50% at full scale, a stable pattern independent of
+accuracy — oversizing and undersizing rates trade off against each other
+as accuracy improves (the neural network's combined error rate shrinks,
+but the remaining errors split roughly evenly in direction), rather than
+oversizing disappearing outright.
 
-![Mean extra system LCOE from trusting each model's prediction, full scale](../outputs/figures/29_extra_lcoe_by_model_full.png)
-*Figure 29 (full-scale) — Mean extra system LCOE by model, clean monotonic ordering matching accuracy: naive 0.0145 > Ridge 0.0008 > Random Forest &asymp; neural network &asymp; 0.0003 EUR/kWh.*
-
-![Reliability pass rate by model, full scale](../outputs/figures/22_reliability_pass_rate_full.png)
-*Figure 22 (full-scale) — Reliability pass rate: 100% for every model at every scale.*
-
-![Cost penalty from AI oversizing, full scale](../outputs/figures/26_cost_penalty_oversizing_full.png)
-*Figure 26 (full-scale) — Additional annualized system cost from oversizing, by model, full scale.*
-
-The table above and Figure 29 summarize the comparison with single numbers
-per model (mean extra system LCOE, MAE, R^2 in §17). Figures 30 and 31 make
+The table above summarizes the comparison with a single number (mean extra
+system LCOE, MAE, R^2 in §17). Figures 30 and 31 make
 the same mechanistic-vs-neural-network comparison directly, plotting the
 mechanistic-reference and neural-network-predicted value for every one of
 the 751 full-scale test scenarios, sorted by the mechanistic reference so
@@ -1063,60 +989,50 @@ model here to tied-best there purely because training data grew from 100 to
 
 | Model | MAE (kWh) | R² | Inference time (s/scenario) |
 |---|---|---|---|
-| Naive | 1,328.1 | -0.042 | 0.000013 |
-| Ridge | 233.6 | 0.950 | 0.000064 |
-| Random Forest | 227.3 | 0.954 | 0.001333 |
 | Neural Network | 2,021.2 | -2.215 | 0.008882 |
 
 Mechanistic exhaustive search: ~0.291 s/scenario (81-candidate sweep, diesel
-backup applied, §8), pilot dataset generation (100 scenarios): ~0.7 s total — after the numba dispatch speedup (§9).
+backup applied, §8), pilot dataset generation (100 scenarios): ~0.7 s total — after the numba dispatch speedup (§9). The three baselines' own MAE/R²/inference
+numbers are in Appendix A, Table A7.
 
 Break-even (PROJECT_BRIEF.md §22, denominator per refinement addendum §1.5 — the full exhaustive search per scenario, not a single dispatch run):
 
 | Model | Training time (s) | N_break_even (scenarios) |
 |---|---|---|
-| Ridge | 0.022 | ~100 |
-| Random Forest | 1.37 | ~105 |
 | Neural Network | 6.9 | ~128 |
 
-Ridge and Random Forest's break-even points land close to the pilot's own
-size (100 scenarios); the neural network's is somewhat higher (~128), driven
-by its slower training time relative to Ridge/Random Forest, not by anything
-about mechanistic search cost. For a one-off ~100-130 scenario evaluation,
-Ridge/RF and mechanistic search are roughly a wash; the neural network needs
-meaningfully more reuse to pay off its training cost. Figure 24 shows this
-runtime gap directly on a log scale, and Figure 25 plots the same models'
-accuracy against their inference time, the two axes this break-even trade-off
-actually balances.
+The two simpler baselines' break-even points (Appendix A, Table A8) land
+close to the pilot's own size (100 scenarios); the neural network's is
+somewhat higher (~128), driven by its slower training time relative to
+those simpler models, not by anything about mechanistic search cost. For a
+one-off ~100-130 scenario evaluation, mechanistic search is already about
+as fast as retraining pays off; the neural network needs meaningfully more
+reuse to pay off its training cost. Figure 24 shows this runtime gap
+directly on a log scale.
 
 ![Runtime comparison: mechanistic search vs. ML training vs. ML inference, log scale](../outputs/figures/24_runtime_comparison.png)
 *Figure 24 — Runtime comparison across stages, log scale (pilot).*
-
-![Accuracy vs. inference-time trade-off, pilot](../outputs/figures/25_accuracy_runtime_tradeoff.png)
-*Figure 25 — MAE vs. inference time per model, log-x scale (pilot). No full-scale equivalent was generated; the qualitative ordering of inference speed is unchanged by dataset size.*
 
 ### 17.2 Full-scale (Stage 8/9)
 
 | Model | MAE (kWh) | R² | Inference time (s/scenario) |
 |---|---|---|---|
-| Naive | 1,338.9 | -0.054 | negligible (&mu;s-scale) |
-| Ridge | 237.7 | 0.960 | 0.000003 |
-| Random Forest | 118.7 | 0.987 | 0.000031 |
 | Neural Network | 98.6 | 0.993 | 0.000140 |
 
 Mechanistic exhaustive search on the full dataset: ~0.093 s/scenario mean
 (5,000 scenarios; 465.8 s actual wall-clock time with the 4-worker parallel
-dataset generation, §9).
+dataset generation, §9). The three baselines' full-scale numbers are in
+Appendix A, Table A9.
 
 Break-even, full-scale training costs:
 
 | Model | Training time (s) | N_break_even (scenarios) |
 |---|---|---|
-| Ridge | 0.031 | ~5,000 |
-| Random Forest | 36.8 | ~5,123 |
 | Neural Network | 60.1 | ~5,203 |
 
-At full scale, every model's break-even point lands just above the size of
+Appendix A (Table A10) reports the simpler baselines' break-even points
+too, for completeness; at full scale, every model's break-even point lands
+just above the size of
 the dataset it was trained on (~5,000-5,203 scenarios). This shows
 N_break_even scales with training-set size, because a larger training set
 both costs more mechanistic search to generate (the denominator, per
@@ -1431,3 +1347,195 @@ would have shown 100%/100%/100%/100% at both scales here and told the reader
 nothing about which model was actually better to trust, which is exactly the
 gap this report's physical-verification reframing (§16) was written to
 close.
+
+## Appendix A: Full Four-Model Comparison (Naive, Ridge, Random Forest, Neural Network)
+
+PROJECT_BRIEF.md's specification requires implementing and evaluating at
+least four models — a naive/rule-based baseline, linear/ridge regression, a
+random forest or gradient-boosting regressor, and the neural network — not
+comparing the neural network against the mechanistic model alone. §11
+describes what the three simpler baselines are and how they were trained;
+§15-§17's main narrative focuses on the neural network's own results
+against the mechanistic reference, which is this report's central research
+question (§3). This appendix reports the complete four-model tables and
+per-model figures the main narrative summarizes and points to, exactly as
+produced by the pipeline, with no results held back.
+
+### A.1 Accuracy (§15)
+
+Table A1 — Pilot accuracy, all four models (test split, 16 scenarios):
+
+| Model | MAE (kWh) | RMSE (kWh) | R² | Bias (kWh) | % within 20% |
+|---|---|---|---|---|---|
+| Naive (median) | 1,328.1 | 1,481.7 | -0.042 | 296.9 | 25.0% |
+| Ridge | 233.6 | 324.0 | 0.950 | 82.7 | 100.0% |
+| Random Forest | 227.3 | 312.1 | 0.954 | -36.8 | 93.75% |
+| Neural Network (MLP) | 2,021.2 | 2,602.9 | -2.215 | -1,824.8 | 31.25% |
+
+Table A2 — Pilot operational metrics (under/over-prediction, reported
+separately from averaged accuracy per PROJECT_BRIEF.md §21):
+
+| Model | Underprediction rate | Mean underprediction (kWh) | Overprediction rate | Mean overprediction (kWh) |
+|---|---|---|---|---|
+| Naive | 37.5% | 1,375.0 | 62.5% | 1,300.0 |
+| Ridge | 37.5% | 201.1 | 62.5% | 253.0 |
+| Random Forest | 50.0% | 264.1 | 50.0% | 190.5 |
+| Neural Network | 75.0% | 2,564.0 | 25.0% | 393.0 |
+
+At pilot scale, the neural network has the worst accuracy on every metric,
+including a negative R² worse than the naive baseline's — §12 and §15.1
+explain why (70 training rows, a 15,233-parameter network, a textbook
+overparameterized regime). Ridge and Random Forest's points hug the
+diagonal closely in Figure A2/A3; the neural network's (Figure A5) is
+visibly off it. The residual distributions (Figures A6-A9) tell the same
+story: Ridge and Random Forest's errors cluster tightly near zero, the
+naive baseline's are widely spread since it predicts one flat value
+regardless of scenario, and the neural network's are the widest and least
+centered of the four.
+
+![MAE/RMSE comparison across all four models, pilot scale](../outputs/figures/21_metric_comparison.png)
+*Figure A1 — MAE/RMSE by model, pilot. Ridge and Random Forest lead; the neural network trails even the naive baseline.*
+
+![Predicted vs. reference capacity, Ridge, pilot test split](../outputs/figures/17_predicted_vs_reference_ridge.png)
+*Figure A2 — Ridge: predicted vs. true capacity, pilot test split (n=16). Points hug the diagonal.*
+
+![Predicted vs. reference capacity, Random Forest, pilot test split](../outputs/figures/17_predicted_vs_reference_random_forest.png)
+*Figure A3 — Random Forest: predicted vs. true capacity, pilot test split.*
+
+![Predicted vs. reference capacity, naive baseline, pilot test split](../outputs/figures/17_predicted_vs_reference_naive.png)
+*Figure A4 — Naive median baseline: predicted vs. true capacity, pilot test split.*
+
+![Predicted vs. reference capacity, neural network, pilot test split](../outputs/figures/17_predicted_vs_reference_neural_network.png)
+*Figure A5 — Neural network: predicted vs. true capacity, pilot test split. Visibly the worst fit of the four.*
+
+![Residual distribution, Ridge, pilot](../outputs/figures/18_residuals_ridge.png)
+*Figure A6 — Ridge residuals, tightly clustered near zero.*
+
+![Residual distribution, Random Forest, pilot](../outputs/figures/18_residuals_random_forest.png)
+*Figure A7 — Random Forest residuals, similarly tight clustering.*
+
+![Residual distribution, naive baseline, pilot](../outputs/figures/18_residuals_naive.png)
+*Figure A8 — Naive baseline residuals, wide spread.*
+
+![Residual distribution, neural network, pilot](../outputs/figures/18_residuals_neural_network.png)
+*Figure A9 — Neural network residuals: widest, least-centered spread of the four.*
+
+![Over-/under-prediction rates by model, pilot](../outputs/figures/23_over_under_prediction.png)
+*Figure A10 — Over-/under-prediction rates by model, pilot, reported separately per PROJECT_BRIEF.md §21.*
+
+Table A3 — Full-scale accuracy, all four models (test split, 751 scenarios):
+
+| Model | MAE (kWh) | RMSE (kWh) | R² | Bias (kWh) | % within 20% |
+|---|---|---|---|---|---|
+| Naive (median) | 1,338.9 | 1,726.2 | -0.054 | -390.1 | 31.7% |
+| Ridge | 237.7 | 338.3 | 0.960 | -4.7 | 93.5% |
+| Random Forest | 118.7 | 189.5 | 0.987 | -2.1 | 98.3% |
+| Neural Network (MLP) | 98.6 | 138.6 | 0.993 | -8.8 | 99.2% |
+
+Table A4 — Full-scale operational metrics (751 test scenarios):
+
+| Model | Underprediction rate | Mean underprediction (kWh) | Overprediction rate | Mean overprediction (kWh) |
+|---|---|---|---|---|
+| Naive | 47.5% | 1,818.6 | 46.5% | 1,020.8 |
+| Ridge | 51.1% | 237.0 | 48.9% | 238.4 |
+| Random Forest | 49.0% | 123.2 | 49.4% | 118.1 |
+| Neural Network | 51.1% | 105.1 | 48.9% | 91.9 |
+
+At 751 test scenarios, the accuracy ranking completely reverses relative to
+the pilot: naive < Ridge < Random Forest < neural network, with the neural
+network now clearly best (R² 0.993, MAE below Random Forest's) rather than
+clearly worst (§15.2, §18 discuss why in full).
+
+### A.2 Physical Verification (§16)
+
+Table A5 — Pilot physical verification, all four models (16 scenarios × 4
+models = 64 verification runs):
+
+| Model | Mean extra system LCOE (EUR/kWh) | Reliability pass rate | % undersized | % oversized | Additional cost from oversizing (EUR/yr) |
+|---|---|---|---|---|---|
+| Naive | 0.0217 | 100% | 37.5% | 62.5% | 362,363 |
+| Ridge | 0.0013 | 100% | 12.5% | 62.5% | 36,266 |
+| Random Forest | 0.0016 | 100% | 18.75% | 50.0% | 26,350 |
+| Neural Network | 0.0361 | 100% | 68.75% | 25.0% | 53,143 |
+
+![Mean extra system LCOE from trusting each model's prediction, pilot scale](../outputs/figures/29_extra_lcoe_by_model.png)
+*Figure A11 — Mean extra system LCOE by model, pilot. Neural network worst (0.0361 EUR/kWh); Ridge/Random Forest cheapest.*
+
+![Reliability pass rate by model, pilot](../outputs/figures/22_reliability_pass_rate.png)
+*Figure A12 — Reliability pass rate by model, pilot: 100% for every model, since diesel guarantees it.*
+
+![Cost penalty from AI oversizing, pilot](../outputs/figures/26_cost_penalty_oversizing.png)
+*Figure A13 — Additional annualized system cost from oversizing, by model, pilot.*
+
+Table A6 — Full-scale physical verification, all four models (751 test
+scenarios × 4 models = 3,004 verification runs):
+
+| Model | Mean extra system LCOE (EUR/kWh) | Reliability pass rate | % undersized | % oversized | Additional cost from oversizing (EUR/yr) |
+|---|---|---|---|---|---|
+| Naive | 0.0145 | 100% | 47.5% | 46.5% | 6,785,771 |
+| Ridge | 0.0008 | 100% | 18.5% | 48.9% | 967,150 |
+| Random Forest | 0.0003 | 100% | 5.3% | 49.4% | 459,996 |
+| Neural Network | 0.0003 | 100% | 3.3% | 48.9% | 431,251 |
+
+![Mean extra system LCOE from trusting each model's prediction, full scale](../outputs/figures/29_extra_lcoe_by_model_full.png)
+*Figure A14 — Mean extra system LCOE by model, full scale, clean monotonic ordering matching accuracy: naive 0.0145 > Ridge 0.0008 > Random Forest ≈ neural network ≈ 0.0003 EUR/kWh.*
+
+![Reliability pass rate by model, full scale](../outputs/figures/22_reliability_pass_rate_full.png)
+*Figure A15 — Reliability pass rate by model, full scale: 100% for every model at every scale.*
+
+![Cost penalty from AI oversizing, full scale](../outputs/figures/26_cost_penalty_oversizing_full.png)
+*Figure A16 — Additional annualized system cost from oversizing, by model, full scale.*
+
+At pilot scale, the neural network's predictions were the *most* expensive
+of the four models to trust; at full scale, it is statistically tied with
+Random Forest for *cheapest* to trust, the same reversal documented for
+accuracy above (§16, §18 discuss why in full).
+
+### A.3 Accuracy and Computational Efficiency (§17)
+
+Table A7 — Pilot accuracy/inference-time summary, all four models:
+
+| Model | MAE (kWh) | R² | Inference time (s/scenario) |
+|---|---|---|---|
+| Naive | 1,328.1 | -0.042 | 0.000013 |
+| Ridge | 233.6 | 0.950 | 0.000064 |
+| Random Forest | 227.3 | 0.954 | 0.001333 |
+| Neural Network | 2,021.2 | -2.215 | 0.008882 |
+
+Table A8 — Pilot break-even, all trained models (PROJECT_BRIEF.md §22,
+denominator per refinement addendum §1.5 — the full exhaustive search per
+scenario, not a single dispatch run):
+
+| Model | Training time (s) | N_break_even (scenarios) |
+|---|---|---|
+| Ridge | 0.022 | ~100 |
+| Random Forest | 1.37 | ~105 |
+| Neural Network | 6.9 | ~128 |
+
+![Accuracy vs. inference-time trade-off, pilot](../outputs/figures/25_accuracy_runtime_tradeoff.png)
+*Figure A17 — MAE vs. inference time per model, log-x scale, pilot. No full-scale equivalent was generated; the qualitative ordering of inference speed is unchanged by dataset size.*
+
+Table A9 — Full-scale accuracy/inference-time summary, all four models:
+
+| Model | MAE (kWh) | R² | Inference time (s/scenario) |
+|---|---|---|---|
+| Naive | 1,338.9 | -0.054 | negligible (µs-scale) |
+| Ridge | 237.7 | 0.960 | 0.000003 |
+| Random Forest | 118.7 | 0.987 | 0.000031 |
+| Neural Network | 98.6 | 0.993 | 0.000140 |
+
+Table A10 — Full-scale break-even, all trained models:
+
+| Model | Training time (s) | N_break_even (scenarios) |
+|---|---|---|
+| Ridge | 0.031 | ~5,000 |
+| Random Forest | 36.8 | ~5,123 |
+| Neural Network | 60.1 | ~5,203 |
+
+Ridge and Random Forest's break-even points land close to the pilot's own
+size at pilot scale (~100-105 scenarios) and close to the full dataset's
+size at full scale (~5,000-5,123 scenarios), the same pattern documented
+for the neural network in §17 — N_break_even scales with training-set size
+for every trained model, not just the neural network, because a larger
+training set both costs more mechanistic search to generate and takes
+proportionally longer to train a model on.
