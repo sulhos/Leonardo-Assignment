@@ -126,6 +126,26 @@ def test_verify_predictions_flags_undersizing_and_oversizing_correctly() -> None
     assert result.loc[1, "oversized"] and not result.loc[1, "undersized"]
 
 
+def test_verify_predictions_lean_on_diesel_diagnostic_reflects_battery_alone_lpsp() -> None:
+    # Diesel-hybrid "lean on diesel" diagnostic: a smaller-than-optimal AI
+    # battery should show a HIGHER battery-alone LPSP (renewables+battery
+    # without diesel) than the reference, and a positive
+    # lean_on_diesel_difference -- it leans on diesel more than the true
+    # optimum would, exactly the signal a reliability pass/fail check can no
+    # longer provide once diesel makes pass/fail near-universal.
+    weather = _synthetic_full_year_weather()
+    scenarios = pd.DataFrame([_scenario_row(scenario_id=0, optimal_n_modules=20)])
+    predicted = pd.Series([2 * MODULE_CAPACITY_KWH], index=scenarios.index)
+
+    result = verify_predictions(scenarios, predicted, weather, SITE_CONFIG, MODULE_CAPACITY_KWH)
+
+    assert result.loc[0, "verified_lpsp_battery_alone"] > result.loc[0, "reference_lpsp_battery_alone"]
+    assert result.loc[0, "lean_on_diesel_difference"] == pytest.approx(
+        result.loc[0, "verified_lpsp_battery_alone"] - result.loc[0, "reference_lpsp_battery_alone"]
+    )
+    assert result.loc[0, "lean_on_diesel_difference"] > 0
+
+
 def test_verify_predictions_reliability_near_universal_with_diesel_backup() -> None:
     # PROJECT_BRIEF.md Addendum 3: diesel (default sizing_factor=1.25 * peak
     # load) covers any residual deficit regardless of battery size, so even a
@@ -256,6 +276,9 @@ def test_summarize_verification_aggregates() -> None:
         "curtailed_difference_kwh": [10.0, -5.0, 15.0, 0.0],
         "extra_system_lcoe_eur_per_kwh": [0.01, 0.0, 0.05, 0.02],
         "reference_system_lcoe_eur_per_kwh": [0.20, 0.20, 0.20, 0.20],
+        "verified_lpsp_battery_alone": [0.10, 0.05, 0.20, 0.02],
+        "reference_lpsp_battery_alone": [0.08, 0.05, 0.15, 0.02],
+        "lean_on_diesel_difference": [0.02, 0.0, 0.05, 0.0],
     })
     summary = summarize_verification(verification)
 
@@ -271,3 +294,7 @@ def test_summarize_verification_aggregates() -> None:
     assert summary["n_reliability_violations_from_undersizing"] == 2
     assert summary["max_underprediction_kwh"] == pytest.approx(50.0)
     assert summary["additional_cost_from_oversizing_eur"] == pytest.approx(500.0)
+    assert summary["mean_verified_lpsp_battery_alone"] == pytest.approx(0.0925)
+    assert summary["mean_reference_lpsp_battery_alone"] == pytest.approx(0.075)
+    assert summary["mean_lean_on_diesel_difference"] == pytest.approx(0.0175)
+    assert summary["pct_leaning_more_on_diesel_than_optimum"] == pytest.approx(0.5)

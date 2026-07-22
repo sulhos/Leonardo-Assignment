@@ -24,25 +24,25 @@ weather_years: [2023]
 ranges:
   pv_capacity_kwp: [500, 3500]
   wind_capacity_kw: [200, 2000]
-  # V2 diesel-hybrid demonstration (post-Task-11 addendum, see
-  # v2/DIESEL_HYBRID_DEMO.md): raised from the off-grid study's
-  # [800,000, 2,500,000] / [150, 550] (which generated the currently-
-  # committed data/scenarios/full_scenarios.csv -- that dataset and its
-  # trained model remain valid, they were simply generated under these
-  # OLD range values, not the current ones) to bracket the new 4.5 GWh/year
-  # / 1,200kW diesel-hybrid baseline case in jinan.yaml. Scaled by the same
-  # ~2.7x factor applied to the baseline itself (unchanged
-  # pv_capacity_kwp/wind_capacity_kw/combined-cap ranges above -- only load
-  # moved, matching the baseline-case rationale in jinan.yaml). NOT yet
-  # used to regenerate a full diesel-hybrid dataset -- that full-dataset
-  # regeneration + NN retraining is an explicitly deferred follow-up step,
-  # per the demonstration's own scope (mechanistic side only). If a
-  # diesel-hybrid off-grid comparison range is needed instead, restore
-  # [800000, 2500000] / [150, 550] (also documented in
-  # DIESEL_HYBRID_DEMO.md) and set jinan.yaml's system.backup back to
-  # "none".
-  annual_load_kwh: [2500000, 6500000]
-  peak_load_kw: [700, 1700]
+  # Diesel-hybrid is now the sole ML study configuration (system.backup:
+  # diesel, jinan.yaml). Ranges widened from the diesel-hybrid demo's
+  # narrower [2,500,000, 6,500,000]/[700, 1,700] (which only had to bracket
+  # one baseline case) to intentionally span both renewable-rich (low load
+  # relative to fixed PV/wind capacity -> battery worth paying for, per the
+  # LCOE U-curve in the report) and load-heavy (high load -> diesel does
+  # most of the work, optimal battery small or near-zero) regimes, so the
+  # resulting dataset's optimal-battery target has real spread rather than
+  # clustering at one extreme. Upper bound trimmed from a suggested
+  # 7,000,000 to 6,500,000: confirmed empirically that 7,000,000 kWh/year
+  # is not achievable under this project's load-shape generator within a
+  # peak_load_kw of 1,800 (needs >=2,333 kW peak, well outside the
+  # suggested peak range) -- 6,500,000 is the practical ceiling that stays
+  # compatible with peak_load_kw's own upper bound below. The off-grid
+  # study's dataset and trained model (previously generated under
+  # [800,000, 2,500,000]/[150, 550]) remain in git history but are no
+  # longer the current dataset -- see git history to reproduce them.
+  annual_load_kwh: [1500000, 6500000]
+  peak_load_kw: [400, 1800]
   reliability_target_load_served: [0.990, 0.999]
   round_trip_efficiency: [0.88, 0.97]
   usable_soc_window_fraction: [0.70, 0.90]

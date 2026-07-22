@@ -22,9 +22,13 @@ SITE = "jinan"
 TARGET_COL = "optimal_capacity_kwh"
 
 
-def load_merged_dataset() -> tuple[pd.DataFrame, list[str]]:
-    features = pd.read_csv(REPO_ROOT / "data/ml_dataset/full_features.csv")
-    labels = pd.read_csv(REPO_ROOT / "data/ml_dataset/full_labels.csv")
+def load_merged_dataset(dataset_name: str = "full") -> tuple[pd.DataFrame, list[str]]:
+    """`dataset_name`: "full" (the completed off-grid study) or "diesel_full"
+    (the diesel-hybrid study that replaced it as the current ML target) --
+    selects which of data/ml_dataset/{name}_features.csv/{name}_labels.csv
+    to load, so this one function serves both without duplication."""
+    features = pd.read_csv(REPO_ROOT / f"data/ml_dataset/{dataset_name}_features.csv")
+    labels = pd.read_csv(REPO_ROOT / f"data/ml_dataset/{dataset_name}_labels.csv")
     merged = features.merge(labels, on="scenario_id", how="inner", validate="one_to_one")
     feature_cols = [c for c in features.columns if c != "scenario_id"]
     assert not (LEAKAGE_COLUMNS & set(feature_cols)), "leakage columns present in feature_cols"

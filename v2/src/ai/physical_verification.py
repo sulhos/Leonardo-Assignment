@@ -230,6 +230,18 @@ def verify_predictions(
             "verified_curtailed_kwh": ai_metrics["curtailed_energy_kwh"],
             "reference_curtailed_kwh": ref_metrics["curtailed_energy_kwh"],
             "curtailed_difference_kwh": ai_metrics["curtailed_energy_kwh"] - ref_metrics["curtailed_energy_kwh"],
+            # Diesel-hybrid "lean on diesel" diagnostic (replaces the
+            # off-grid pass/fail reliability check with a meaningful
+            # diesel-era analogue): LPSP renewables+battery ALONE would
+            # have achieved, without diesel -- ai_metrics/ref_metrics
+            # already compute this internally (compute_candidate_metrics's
+            # own "lpsp" field, from the pre-diesel dispatch result), just
+            # not previously exposed here. Higher verified_lpsp_battery_alone
+            # than reference_lpsp_battery_alone means the AI's choice leans
+            # on diesel more than the true optimum would.
+            "verified_lpsp_battery_alone": ai_metrics["lpsp"],
+            "reference_lpsp_battery_alone": ref_metrics["lpsp"],
+            "lean_on_diesel_difference": ai_metrics["lpsp"] - ref_metrics["lpsp"],
         })
 
     result = pd.DataFrame(rows)
@@ -272,4 +284,8 @@ def summarize_verification(verification: pd.DataFrame) -> dict:
         "n_reliability_violations_from_undersizing": int((reliability_violations["undersized"]).sum()),
         "mean_curtailed_difference_kwh": float(verification["curtailed_difference_kwh"].mean()),
         "mean_cost_difference_eur": float(verification["cost_difference_eur"].mean()),
+        "mean_verified_lpsp_battery_alone": float(verification["verified_lpsp_battery_alone"].mean()),
+        "mean_reference_lpsp_battery_alone": float(verification["reference_lpsp_battery_alone"].mean()),
+        "mean_lean_on_diesel_difference": float(verification["lean_on_diesel_difference"].mean()),
+        "pct_leaning_more_on_diesel_than_optimum": float((verification["lean_on_diesel_difference"] > 0).mean()),
     }
