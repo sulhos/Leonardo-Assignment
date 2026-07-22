@@ -23,12 +23,13 @@ brings diminishing returns once it's already covering the site's daily and weekl
 storage needs.
 
 This study found the sizing decision is genuinely two-sided, not "bigger is always
-safer." For this project's baseline case, the cost of electricity produced by the
-system (measured in Euros per kilowatt-hour, or "system LCOE" — Levelized Cost Of
-Energy) starts at **0.287 EUR/kWh with no battery at all**, falls to a low of
-**0.239 EUR/kWh** at a specific battery size, and then **climbs back up again** if
-more battery is added beyond that point. Getting the size right is worth real money;
-getting it wrong in either direction costs more than it needs to.
+safer." Figure 1 shows this directly: for this project's baseline case, the cost of
+electricity produced by the system (measured in Euros per kilowatt-hour, or "system
+LCOE" — Levelized Cost Of Energy) starts at **0.287 EUR/kWh with no battery at
+all**, falls to a low of **0.239 EUR/kWh** at a specific battery size, and then
+**climbs back up again** if more battery is added beyond that point. Getting the
+size right is worth real money; getting it wrong in either direction costs more than
+it needs to.
 
 ![System cost of electricity vs. battery size — costs fall, then rise again](../outputs/figures/27_system_lcoe_vs_capacity.png)
 *Figure 1 — The system's cost per kilowatt-hour as battery size increases. The lowest-cost point (19 battery modules, 4,750 kWh) sits in the middle — not at zero battery, and not at the largest battery tested.*
@@ -78,7 +79,8 @@ The results depended heavily on how much data the AI had been trained on:
   architecture, trained on more examples, would have cost only **0.03 cents per
   kilowatt-hour extra** — a negligible amount, essentially free compared to the true
   optimum, and on par with more traditional statistical methods (Ridge regression,
-  Random Forest) also tested in this study.
+  Random Forest) also tested in this study. Figure 2 shows this well-trained
+  comparison across all methods tested.
 
 ![Extra cost per kilowatt-hour from trusting each model's recommendation, well-trained version](../outputs/figures/29_extra_lcoe_by_model_full.png)
 *Figure 2 — Extra cost incurred, per model, from following its battery-size recommendation instead of the true optimum — after training on 5,000 example projects. Lower is better. The AI (neural network) and Random Forest are statistically tied for cheapest to trust.*
@@ -112,11 +114,12 @@ part of the standard design.)
 
 ## 5. When AI Is Useful
 
-AI inference is dramatically faster than the full simulation — a single prediction
-takes a fraction of a millisecond, versus roughly a tenth to a third of a second for
-the full simulation. But training an AI model itself takes time and requires
-generating training examples with the (slower) mechanistic method first. This means
-AI only pays off once it is used enough times to recoup that upfront cost.
+AI inference is dramatically faster than the full simulation (Figure 3) — a single
+prediction takes a fraction of a millisecond, versus roughly a tenth to a third of a
+second for the full simulation. But training an AI model itself takes time and
+requires generating training examples with the (slower) mechanistic method first.
+This means AI only pays off once it is used enough times to recoup that upfront
+cost.
 
 In this study, that break-even point was consistently **just above the number of
 example projects used to train the model** — for a model trained on 100 examples, AI
