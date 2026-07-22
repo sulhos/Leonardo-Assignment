@@ -24,18 +24,28 @@ weather_years: [2023]
 ranges:
   pv_capacity_kwp: [500, 3500]
   wind_capacity_kw: [200, 2000]
-  # Recalibrated after the first Stage 3 run: at the 5,000 kW combined
-  # PV+wind cap below, Jinan's blended capacity factor (~14.8%) caps annual
-  # renewable production at ~6.5 GWh/year. The original [3,000,000,
-  # 21,000,000] range was renewable-inadequate for nearly every scenario
-  # (not just seasonally mismatched), which would produce a dataset
-  # dominated by trivial "too little energy" labels rather than genuine
-  # battery-sizing challenges. Rescaled down so the range brackets the
-  # ~6.5 GWh/year ceiling, matching the residential project's pattern of a
-  # mix of feasible and infeasible (mostly seasonal-timing-limited)
-  # scenarios.
-  annual_load_kwh: [1200000, 6500000]
-  peak_load_kw: [250, 1300]
+  # V2 Task 3 checkpoint follow-up (off-grid re-tuning, superseding the
+  # diesel-era [1,200,000, 6,500,000] range below): off-grid (system.backup:
+  # none, jinan.yaml) makes LPSP a hard feasibility gate again -- a battery
+  # can only bridge short gaps, not a seasonal or annual generation/load
+  # mismatch, so the old diesel-era range (tuned only for annual-energy
+  # balance, ratio ~1.1-1.8) reproduced this project's original
+  # off-grid-scale finding that most sampled systems are infeasible by
+  # construction (empirically confirmed here: only 39/100 = 39% feasible
+  # under the unmodified diesel-era range with system_backup="none"). Rescaled
+  # down (unchanged pv_capacity_kwp/wind_capacity_kw/combined-cap ranges above,
+  # so the combined-renewable-capacity envelope is unchanged) so annual
+  # renewable/load ratios cluster well above 1 instead of near it. Empirically
+  # re-validated with a 100-scenario off-grid pilot at TWO random seeds before
+  # adopting: 88% and 90% feasible respectively (both comfortably >= the 80%
+  # target, while keeping a genuine ~10-12% infeasible tail -- not pushed to
+  # ~100%, so infeasible labels stay a real, informative minority outcome
+  # rather than an edge case). See dev notes / git history for the full
+  # pilot-sweep numbers (feasible-only mean ratio ~3.2, infeasible-only mean
+  # ratio ~1.2-1.4, feasible optimal_n_modules spanning 6-77 of the 0-80
+  # range -- genuine sizing diversity, not all clustered at one extreme).
+  annual_load_kwh: [800000, 2500000]
+  peak_load_kw: [150, 550]
   reliability_target_load_served: [0.990, 0.999]
   round_trip_efficiency: [0.88, 0.97]
   usable_soc_window_fraction: [0.70, 0.90]

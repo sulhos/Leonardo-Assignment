@@ -194,3 +194,45 @@ def test_rejects_negative_n_max() -> None:
     pv, wind, load = _feasible_scenario()
     with pytest.raises(ValueError, match="n_max"):
         run_battery_search(pv, wind, load, n_max=-1, **COMMON_BATTERY_KWARGS, **COMMON_SYSTEM_KWARGS)
+
+
+def test_rejects_invalid_system_backup() -> None:
+    pv, wind, load = _feasible_scenario()
+    with pytest.raises(ValueError, match="system_backup"):
+        run_battery_search(
+            pv, wind, load, n_max=6, system_backup="grid",
+            **COMMON_BATTERY_KWARGS, **COMMON_SYSTEM_KWARGS,
+        )
+
+
+def test_off_grid_zeroes_diesel_and_selects_smallest_feasible() -> None:
+    # Off-grid (system_backup="none"): diesel_rated_power_kw must be exactly
+    # 0 (a true no-op, not just near-zero), and the selected candidate must
+    # be the SMALLEST module count meeting the LPSP target -- not the
+    # cheapest one, which is the diesel-backed objective.
+    pv, wind, load = _feasible_scenario()
+    result = run_battery_search(
+        pv, wind, load, n_max=6, lpsp_target=0.01, system_backup="none",
+        **COMMON_BATTERY_KWARGS, **COMMON_SYSTEM_KWARGS,
+    )
+    assert (result.candidates["diesel_rated_power_kw"] == 0.0).all()
+    assert result.feasible is True
+    feasible_candidates = result.candidates[result.candidates["lpsp_after_diesel"] <= 0.01]
+    assert result.optimal_n_modules == feasible_candidates["n_modules"].min()
+
+
+def test_off_grid_genuinely_infeasible_when_no_candidate_meets_target() -> None:
+    # Renewables are below load in every hour (see
+    # _renewable_inadequate_scenario): off-grid, no battery within the
+    # tested range can bridge that -- must report feasible=False with the
+    # "no candidate" reason, never fall back to a maximum-battery guess.
+    pv, wind, load = _renewable_inadequate_scenario()
+    result = run_battery_search(
+        pv, wind, load, n_max=5, lpsp_target=0.01, system_backup="none",
+        **COMMON_BATTERY_KWARGS, **COMMON_SYSTEM_KWARGS,
+    )
+    assert result.feasible is False
+    assert result.optimal_n_modules is None
+    assert result.optimal_capacity_kwh is None
+    assert result.lpsp is None
+    assert "no candidate" in result.infeasibility_reason.lower()

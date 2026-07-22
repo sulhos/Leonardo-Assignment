@@ -17,33 +17,55 @@ simulation:
   year: 2023
   expected_hourly_records: 8760  # non-leap local year
 
+system:
+  # V2 Task 3 (CHECKPOINT, resolved): "none" (off-grid -- reliability is a
+  # hard constraint, smallest-feasible-battery is the objective, a
+  # pass/fail verification is a real check) is the sole V2 study
+  # configuration. Diesel-backed ("diesel": reliability guaranteed by
+  # construction, min-system-LCOE is the objective) remains fully
+  # supported by the code below -- it is V1's documented prior work and is
+  # not re-run in V2, not because it was removed. Off-grid was chosen
+  # because it is the harder, more informative case for the mechanistic-
+  # vs-NN comparison this project is actually about (a real reliability
+  # constraint the NN must also learn to respect), on the explicit
+  # condition that config/scenario_generation.yaml's sampling ranges are
+  # re-tuned so most sampled systems are renewable-adequate BEFORE the
+  # full dataset is generated (see that file's ranges: section) --
+  # otherwise most off-grid scenarios are infeasible by construction (a
+  # seasonal generation/load mismatch no battery within the tested range
+  # can bridge), collapsing the ML task to mostly-infeasible labels.
+  # Threaded through src.physics.optimization.run_battery_search and
+  # src.ai.physical_verification via every caller that builds a scenario
+  # dataset or re-simulates a prediction.
+  backup: none
+
 load:
-  # Recalibrated after the first Stage 3 run: at the max 5,000 kW combined
-  # PV+wind cap, Jinan's blended capacity factor (~14.8%) caps annual
-  # renewable production at ~6.5 GWh/year -- a 12 GWh/year load was
-  # renewable-inadequate outright (0.28 annual ratio), not just
-  # seasonally mismatched. Rescaled down so the baseline case sits near
-  # annual balance, consistent with the residential project's baseline
-  # (~111% annual coverage, seasonal-timing-limited, not quantity-limited).
-  target_annual_kwh: 3800000       # 3.8 GWh/year
-  # V2 Task 4 (load-shape coherence): profile_family switched from
-  # industrial_baseline to residential_baseline, and max_hourly_kw raised
-  # from 800 to 1100, so the Stage-3 baseline showcase uses the SAME load
-  # shape the sampled ML scenario dataset actually uses --
+  # V2 Task 3 checkpoint follow-up (off-grid re-tuning): under off-grid
+  # (system.backup: none above), the diesel-era 3.8 GWh/year baseline
+  # (renewable/load ratio ~1.09) is genuinely infeasible even at the max
+  # 80-module (20,000 kWh) battery -- confirmed empirically, not assumed
+  # (see git history / dev notes). Rescaled down to 1.6 GWh/year so the
+  # baseline sits at ratio ~2.6 (renewable ~4.16 GWh/year at this file's
+  # fixed 1800 kWp PV + 1450 kW wind), which an empirical pilot run
+  # confirmed is off-grid feasible (20 modules, LPSP ~0.94% <= the 1%
+  # target, renewable_share ~99%) -- matching the retuned sampling
+  # envelope below (scenario_generation.yaml's ranges: annual_load_kwh
+  # [800e3, 2.5e6]), not just picked to make this one case pass.
+  target_annual_kwh: 1600000       # 1.6 GWh/year
+  # V2 Task 4 (load-shape coherence): profile_family is residential_baseline
+  # (not industrial_baseline) so the Stage-3 baseline showcase uses the SAME
+  # load shape the sampled ML scenario dataset actually uses --
   # src.scenarios.{sampling,scenario_runner} and
   # src.ai.features.build_feature_matrix all call generate_load_profile
   # without a profile_family argument, so every sampled scenario has always
   # used the residential_baseline shape regardless of this file's setting
-  # (a real coherence gap in the pre-V2 build). The original
-  # industrial_baseline/800kW combination (load factor 0.542) is not even
-  # achievable under residential_baseline's peak-to-average constraints
-  # (generate_load_profile raises its own achievability ValueError); 1100kW
-  # is the lowest peak at which this annual total becomes achievable
-  # (achieved peak plateaus at ~1013 kW, load factor ~0.43), and 1100kW
-  # sits within scenario_generation.yaml's sampled peak_load_kw range
-  # (250-1300kW), so this baseline case remains representative of the
-  # dataset's own sampling envelope.
-  max_hourly_kw: 1100
+  # (a real coherence gap in the pre-V2 build). 430kW is the lowest peak at
+  # which 1.6 GWh/year is achievable under residential_baseline's
+  # peak-to-average constraint (achieved peak plateaus at ~426.5 kW, load
+  # factor ~0.43); 430kW sits within scenario_generation.yaml's retuned
+  # peak_load_kw range (150-550kW), so this baseline case remains
+  # representative of the dataset's own sampling envelope.
+  max_hourly_kw: 430
   profile_family: residential_baseline
   random_seed: 42
 
@@ -158,13 +180,17 @@ diesel:
   economic_lifetime_years: 15   # typical diesel genset design-life assumption
   project_lifetime_years: 20    # matches battery/PV/wind project lifetime
 
-# Reliability is now a REPORTED metric, not the battery-sizing objective
-# (PROJECT_BRIEF.md Addendum 3): diesel is sized by power (always >= peak
-# load), not energy, so it can in principle serve 100% of the load at any
-# battery capacity, making LPSP near-zero for every candidate by construction.
-# The primary objective is now `system_lcoe_eur_per_kwh` minimization
-# (src/physics/optimization.py). These targets remain as reported sensitivity
-# metrics, not feasibility gates.
+# Under system.backup: none (V2's off-grid study), primary_lpsp_target IS
+# the hard feasibility gate again (src.physics.optimization.run_battery_search
+# system_backup="none" branch): the objective is the smallest battery meeting
+# this target, and "no candidate within 0-80 modules meets it" is a genuine,
+# honestly-labelled infeasible outcome -- not silently replaced by a
+# maximum-battery guess. Under system.backup: diesel (V1's documented prior
+# work, not re-run in V2), diesel is sized by power (always >= peak load), so
+# LPSP is near-zero for every candidate by construction and the objective is
+# `system_lcoe_eur_per_kwh` minimization instead; these targets are then
+# reported sensitivity metrics, not feasibility gates. See
+# src/physics/optimization.py's module docstring for both configurations.
 reliability:
   primary_lpsp_target: 0.01  # >= 99% load served -- reported, not a search gate under Path B
   sensitivity_targets_load_served: [0.990, 0.995, 0.999]

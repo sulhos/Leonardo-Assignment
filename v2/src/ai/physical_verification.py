@@ -164,6 +164,7 @@ def verify_predictions(
         )
 
         diesel_cfg = site_config["diesel"]
+        system_backup = site_config["system"]["backup"]
         diesel = DieselSpec(
             # Sized from the just-regenerated load's ACHIEVED peak (load.max()),
             # not scenario["peak_load_kw"] (the original request) -- matching
@@ -174,8 +175,13 @@ def verify_predictions(
             # search's diesel sizing would make "reference" no longer
             # guaranteed optimal under this function's own re-evaluation --
             # observed as small negative extra_system_lcoe_eur_per_kwh values
-            # before this fix.
-            rated_power_kw=diesel_rated_power_kw(float(load.max()), diesel_cfg["sizing_factor"]),
+            # before this fix. Under system_backup="none" (off-grid, V2 Task
+            # 3), rated_power_kw=0.0 makes this a no-op diesel spec, matching
+            # run_battery_search's own off-grid convention exactly.
+            rated_power_kw=(
+                diesel_rated_power_kw(float(load.max()), diesel_cfg["sizing_factor"])
+                if system_backup == "diesel" else 0.0
+            ),
             fuel_curve_intercept_l_per_kwh_rated=diesel_cfg["fuel_curve_intercept_l_per_kwh_rated"],
             fuel_curve_slope_l_per_kwh_output=diesel_cfg["fuel_curve_slope_l_per_kwh_output"],
             fuel_price_eur_per_l=diesel_cfg["fuel_price_eur_per_l"],

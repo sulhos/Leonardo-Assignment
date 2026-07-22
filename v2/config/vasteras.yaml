@@ -17,6 +17,11 @@ simulation:
   year: 2023
   expected_hourly_records: 8760  # non-leap local year; DST handling must be verified
 
+system:
+  # V2 Task 3: matches jinan.yaml's setting -- off-grid (no diesel) is the
+  # sole V2 study configuration; see jinan.yaml for the full rationale.
+  backup: none
+
 load:
   target_annual_kwh: 30000
   max_hourly_kw: 15

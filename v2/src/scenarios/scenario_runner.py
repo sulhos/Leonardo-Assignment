@@ -101,6 +101,7 @@ def run_scenario(scenario: dict, site_config: dict, weather: pd.DataFrame, n_max
         wind_cfg=wind_cfg,
         diesel_cfg=site_config["diesel"],
         lpsp_target=lpsp_target,
+        system_backup=site_config["system"]["backup"],
     )
 
     labels = {

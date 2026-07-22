@@ -176,6 +176,7 @@ def _synthetic_full_year_weather() -> pd.DataFrame:
 
 SITE_CONFIG = {
     "site": {"latitude": 36.65, "longitude": 117.12, "timezone": "Asia/Shanghai"},
+    "system": {"backup": "diesel"},
     "pv": {"tilt_deg": 36.65, "azimuth_deg": 180.0, "system_losses_fraction": 0.14, "inverter_efficiency": 0.96,
            "installed_cost_eur_per_kwp": 700, "economic_lifetime_years": 25, "om_cost_fraction_per_year": 0.015},
     "wind": {"weather_reference_height_m": 10.0, "hub_height_m": 15.0, "wind_shear_exponent": 0.14,
