@@ -4,71 +4,42 @@ mechanistic reference (V2 Task 5-8 prerequisite; mirrors V1's Stage 6-7).
 
 Saves: models/neural_network_full/{best_model.keras,best_model.weights.h5},
 models/preprocessing_full/{scaler.pkl,feature_columns.pkl},
-outputs/tables/{accuracy_metrics_full.csv,operational_metrics_full.csv,
-physical_verification_full.csv,physical_verification_summary_full.csv,
+outputs/tables/{accuracy_metrics_neural_network_full.csv,
+operational_metrics_neural_network_full.csv,
+physical_verification_neural_network_full.csv,
+physical_verification_summary_neural_network_full.csv,
 dataset_split_assignments_full.csv}.
 """
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pandas as pd
+from common import REPO_ROOT, SITE, TARGET_COL, load_merged_dataset, split_dataset, train_and_evaluate
 
-from src.ai.evaluation import compute_accuracy_metrics, compute_operational_metrics
-from src.ai.features import LEAKAGE_COLUMNS
-from src.ai.neural_network import build_model, load_trained_model, predict, set_global_seed, train_model
+from src.ai.evaluation import compute_operational_metrics
 from src.ai.physical_verification import summarize_verification, verify_predictions
-from src.ai.preprocessing import fit_scaler, save_preprocessing_objects
-from src.ai.splitting import split_experiment_a
+from src.ai.preprocessing import save_preprocessing_objects
 from src.config import load_site_config, load_yaml_config
 from src.data.weather import get_processed_weather
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SITE = "jinan"
-
-
-def load_and_split(random_seed: int, ml_cfg: dict) -> tuple[pd.DataFrame, pd.Series, dict]:
-    features = pd.read_csv(REPO_ROOT / "data/ml_dataset/full_features.csv")
-    labels = pd.read_csv(REPO_ROOT / "data/ml_dataset/full_labels.csv")
-    merged = features.merge(labels, on="scenario_id", how="inner", validate="one_to_one")
-
-    split_cfg = ml_cfg["splitting"]["experiment_a"]
-    splits = split_experiment_a(
-        merged, group_column="scenario_id",
-        train_fraction=split_cfg["train_fraction"], val_fraction=split_cfg["val_fraction"],
-        random_seed=random_seed,
-    )
-    feature_cols = [c for c in features.columns if c != "scenario_id"]
-    assert not (LEAKAGE_COLUMNS & set(feature_cols)), "leakage columns present in feature_cols"
-    return merged, pd.Index(feature_cols), splits
 
 
 def run(random_seed: int = 42, save_artifacts: bool = True) -> dict:
     cfg = load_site_config(SITE)
     ml_cfg = load_yaml_config("ml_training")
-    set_global_seed(random_seed)
 
-    merged, feature_cols, splits = load_and_split(random_seed, ml_cfg)
-    target_col = "optimal_capacity_kwh"
+    merged, feature_cols = load_merged_dataset()
+    splits = split_dataset(merged, random_seed, ml_cfg)
 
-    train, val, test = (merged.loc[splits[s]] for s in ("train", "val", "test"))
-    scaler = fit_scaler(train[feature_cols])
-    train_x = pd.DataFrame(scaler.transform(train[feature_cols]), columns=feature_cols, index=train.index)
-    val_x = pd.DataFrame(scaler.transform(val[feature_cols]), columns=feature_cols, index=val.index)
-    test_x = pd.DataFrame(scaler.transform(test[feature_cols]), columns=feature_cols, index=test.index)
-
-    nn_cfg = ml_cfg["neural_network"]
-    model = build_model(n_features=len(feature_cols), config=nn_cfg)
-    checkpoint_dir = REPO_ROOT / "models/neural_network_full"
-    model, history = train_model(
-        model, train_x, train[target_col], val_x, val[target_col], nn_cfg,
-        checkpoint_dir=checkpoint_dir,
+    result = train_and_evaluate(
+        merged, feature_cols, splits, random_seed, ml_cfg,
+        checkpoint_dir=REPO_ROOT / "models/neural_network_full",
     )
-
-    test_pred = predict(model, test_x)
-    accuracy = compute_accuracy_metrics(test[target_col], test_pred)
-    operational = compute_operational_metrics(test[target_col], test_pred)
+    test, test_pred, model, scaler, history = (
+        result["test"], result["test_pred"], result["model"], result["scaler"], result["history"]
+    )
+    accuracy = result["accuracy"]
+    operational = compute_operational_metrics(test[TARGET_COL], test_pred)
     print("accuracy:", accuracy)
     print("operational:", operational)
 

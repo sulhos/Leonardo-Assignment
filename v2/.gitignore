@@ -44,3 +44,9 @@ data/ml_dataset/*
 # Ephemeral run logs only.
 outputs/logs/*
 !outputs/logs/.gitkeep
+
+# Throwaway checkpoint dir used by scripts/task5_cross_validation.py and
+# scripts/task6_learning_curve.py's per-run training (common.py's
+# train_and_evaluate default) -- only the headline seed=42 model
+# (models/neural_network_full/, committed) matters as a persisted artifact.
+outputs/.tmp_checkpoint/
