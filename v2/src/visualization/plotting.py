@@ -641,3 +641,97 @@ def plot_renewable_share_comparison_line(verification: pd.DataFrame, model_name:
     ax.legend()
     fig.tight_layout()
     return fig
+
+
+def plot_predicted_vs_reference_with_r2(y_true: pd.Series, y_pred: np.ndarray, r2: float, model_name: str) -> plt.Figure:
+    """Predicted-vs-reference scatter with a y=x line and R^2 annotated
+    directly on the plot (V2 Task 10's requested standard figure) -- a
+    labelled variant of `plot_predicted_vs_reference` that doesn't require
+    reading the R^2 from a separate table alongside the figure."""
+    y_true_arr = np.asarray(y_true, dtype=float)
+    y_pred_arr = np.asarray(y_pred, dtype=float)
+    lims = [0, max(y_true_arr.max(), y_pred_arr.max()) * 1.05]
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.plot(lims, lims, color="grey", linestyle="--", linewidth=1, label="y = x")
+    ax.scatter(y_true_arr, y_pred_arr, color="steelblue", edgecolor="white", s=40, alpha=0.7)
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    ax.set_xlabel("Mechanistic reference capacity (kWh)")
+    ax.set_ylabel("Predicted capacity (kWh)")
+    ax.set_title(f"Predicted vs. Reference: {model_name}")
+    ax.text(0.05, 0.95, f"$R^2$ = {r2:.4f}\nn = {len(y_true_arr)}", transform=ax.transAxes,
+            va="top", ha="left", fontsize=11, bbox=dict(boxstyle="round", facecolor="white", edgecolor="grey"))
+    ax.legend(loc="lower right")
+    fig.tight_layout()
+    return fig
+
+
+def plot_cross_validation_error_bars(cv_runs: pd.DataFrame) -> plt.Figure:
+    """Bar chart with error bars (mean +/- std across repeated random
+    splits) for MAE, RMSE, and R^2 (V2 Task 5)."""
+    metrics = ["mae", "rmse", "r2"]
+    labels = ["MAE (kWh)", "RMSE (kWh)", "$R^2$"]
+    means = [cv_runs[m].mean() for m in metrics]
+    stds = [cv_runs[m].std() for m in metrics]
+
+    fig, axes = plt.subplots(1, 3, figsize=(11, 4))
+    for ax, metric, label, mean, std in zip(axes, metrics, labels, means, stds):
+        ax.bar([0], [mean], yerr=[std], capsize=8, color="steelblue", width=0.5)
+        ax.set_xticks([])
+        ax.set_ylabel(label)
+        ax.set_title(f"{label}\n{mean:.3g} ± {std:.3g}")
+    fig.suptitle(f"Cross-Validation Accuracy ({len(cv_runs)} independent splits)")
+    fig.tight_layout()
+    return fig
+
+
+def plot_learning_curve(learning_curve: pd.DataFrame) -> plt.Figure:
+    """MAE (left axis) and R^2 (right axis) vs. training-set size (V2 Task 6)."""
+    ordered = learning_curve.sort_values("n_train")
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.plot(ordered["n_train"], ordered["mae"], marker="o", color="steelblue", label="MAE")
+    ax1.set_xlabel("Training-set size (scenarios)")
+    ax1.set_ylabel("MAE (kWh)", color="steelblue")
+    ax1.tick_params(axis="y", labelcolor="steelblue")
+
+    ax2 = ax1.twinx()
+    ax2.plot(ordered["n_train"], ordered["r2"], marker="s", color="firebrick", label="$R^2$")
+    ax2.set_ylabel("$R^2$", color="firebrick")
+    ax2.tick_params(axis="y", labelcolor="firebrick")
+
+    ax1.set_title("Learning Curve: Accuracy vs. Training-Set Size")
+    fig.tight_layout()
+    return fig
+
+
+def plot_permutation_importance(importance: pd.DataFrame, top_n: int = 15) -> plt.Figure:
+    """Horizontal bar chart of the top-N features by mean MAE increase when
+    permuted (V2 Task 7), largest at top."""
+    top = importance.sort_values("mean_mae_increase_kwh", ascending=True).tail(top_n)
+    fig, ax = plt.subplots(figsize=(8, 0.4 * top_n + 1.5))
+    ax.barh(top["feature"], top["mean_mae_increase_kwh"], xerr=top["std_mae_increase_kwh"],
+            color="darkorange", capsize=3)
+    ax.set_xlabel("Mean MAE increase when permuted (kWh)")
+    ax.set_title(f"Permutation Feature Importance (top {top_n})")
+    fig.tight_layout()
+    return fig
+
+
+def plot_cost_sensitivity(cost_sensitivity: pd.DataFrame) -> plt.Figure:
+    """System LCOE (mean, with P10-P90 band) vs. battery installed cost
+    (V2 Task 8)."""
+    ordered = cost_sensitivity.sort_values("battery_cost_eur_per_kwh")
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.fill_between(
+        ordered["battery_cost_eur_per_kwh"], ordered["p10_system_lcoe_eur_per_kwh"],
+        ordered["p90_system_lcoe_eur_per_kwh"], color="steelblue", alpha=0.2, label="P10-P90 across scenarios",
+    )
+    ax.plot(ordered["battery_cost_eur_per_kwh"], ordered["mean_system_lcoe_eur_per_kwh"],
+            marker="o", color="steelblue", label="Mean")
+    ax.set_xlabel("Battery installed cost (EUR/kWh)")
+    ax.set_ylabel("System LCOE (EUR/kWh)")
+    ax.set_title("Cost Sensitivity: System LCOE vs. Battery Installed Cost")
+    ax.legend()
+    fig.tight_layout()
+    return fig
