@@ -1,0 +1,2 @@
+underprediction_rate,overprediction_rate,exact_match_rate,mean_underprediction_kwh,max_underprediction_kwh,mean_overprediction_kwh,max_overprediction_kwh
+0.47058823529411764,0.5294117647058824,0.0,155.37458152770995,3549.1328125,161.91918029785157,2599.1640625
