@@ -1,0 +1,43 @@
+{
+  "dataset_name": "diesel_full",
+  "n_scenarios_requested": 5000,
+  "random_seed": 42,
+  "config_hash": "95ae07438005c5d5",
+  "location": "jinan",
+  "weather_year": 2023,
+  "n_max": 80,
+  "ranges": {
+    "pv_capacity_kwp": [
+      500,
+      3500
+    ],
+    "wind_capacity_kw": [
+      200,
+      2000
+    ],
+    "annual_load_kwh": [
+      1500000,
+      6500000
+    ],
+    "peak_load_kw": [
+      400,
+      1800
+    ],
+    "reliability_target_load_served": [
+      0.99,
+      0.999
+    ],
+    "round_trip_efficiency": [
+      0.88,
+      0.97
+    ],
+    "usable_soc_window_fraction": [
+      0.7,
+      0.9
+    ],
+    "max_combined_pv_wind_capacity_kw": 5000
+  },
+  "last_run_new_scenarios": 5000,
+  "last_run_seconds": 496.164259501,
+  "last_run_parallel": true
+}
