@@ -102,8 +102,18 @@ cent per kilowatt-hour of cost.
 ![System cost of electricity vs. battery size for one example project, with the true optimum and the AI's recommendation both marked](../outputs/figures/32_system_lcoe_curve_with_nn_prediction_full.png)
 *Figure 3 — Cost curve for one representative test project, with the true lowest-cost battery size (green star) and the AI's recommended size (red star) marked. The two stars sit almost on top of each other at the bottom of the curve.*
 
+Figure 4 checks the same thing a second way, plotting renewable share
+against cost instead of battery size against cost. For the same example
+project, it marks where the true optimum and the AI's recommendation each
+land in terms of renewable share and cost together — again, the two stars
+sit almost on top of each other, close to the point where adding more
+renewable energy stops being worth its cost.
+
+![Renewable share vs. cost of electricity for one example project, with the true optimum and the AI's recommendation both marked](../outputs/figures/33_renewable_share_vs_lcoe_with_nn_prediction_full.png)
+*Figure 4 — Renewable share vs. cost of electricity for one representative test project, with the true optimum (green star) and the AI's recommendation (red star) marked. The two stars sit almost on top of each other.*
+
 For a broader check across all 751 test projects at once (not just the one shown in
-Figure 3), Figure 4 plots the battery size recommended by the traditional engineering
+Figures 3-4), Figure 5 plots the battery size recommended by the traditional engineering
 calculation against the battery size recommended by the well-trained AI, sorted from
 smallest to largest project. The two lines follow each other closely across the
 entire range, from small batteries (a few hundred kilowatt-hours) to large ones
@@ -112,7 +122,7 @@ the engineering calculation's answer project by project, not just matching it on
 average.
 
 ![Battery size recommended by the traditional method vs. by the well-trained AI, across 751 test projects](../outputs/figures/30_capacity_comparison_neural_network_full.png)
-*Figure 4 — Battery size recommended by the traditional engineering calculation (black) vs. the well-trained AI (blue), for 751 test projects sorted by the traditional calculation's answer. The two lines track closely across the full range of project sizes.*
+*Figure 5 — Battery size recommended by the traditional engineering calculation (black) vs. the well-trained AI (blue), for 751 test projects sorted by the traditional calculation's answer. The two lines track closely across the full range of project sizes.*
 
 ## 4. Reliability Risks
 
@@ -137,7 +147,7 @@ part of the standard design.)
 
 ## 5. When AI Is Useful
 
-AI inference is dramatically faster than the full simulation (Figure 5) — a single
+AI inference is dramatically faster than the full simulation (Figure 6) — a single
 prediction takes a fraction of a millisecond, versus roughly a tenth to a third of a
 second for the full simulation. But training an AI model itself takes time and
 requires generating training examples with the (slower) mechanistic method first.
@@ -157,7 +167,7 @@ the traditional simulation is already fast enough and remains the more directly
 trustworthy choice.
 
 ![How long each step takes, from full simulation to AI prediction (log scale)](../outputs/figures/24_runtime_comparison.png)
-*Figure 5 — Time required per evaluation, from slowest (full mechanistic simulation) to fastest (AI inference) — note the scale is logarithmic, so each step down is roughly a 10x-1000x speed difference.*
+*Figure 6 — Time required per evaluation, from slowest (full mechanistic simulation) to fastest (AI inference) — note the scale is logarithmic, so each step down is roughly a 10x-1000x speed difference.*
 
 ## 6. When Mechanistic Verification Is Necessary
 

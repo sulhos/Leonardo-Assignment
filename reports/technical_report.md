@@ -311,6 +311,25 @@ Results in §15.
 
 ## 12. Neural-Network Architecture and Training
 
+Why a neural network at all, given the mechanistic model (§6-8) already
+computes the exact, physically correct answer for any given scenario? Not
+for accuracy -- the mechanistic model *is* the ground truth here, so a
+trained model can at best match it, never improve on it, and every result
+in this report should be read with that asymmetry in mind. The motivation
+is reproducing the mechanistic model's answer at a fraction of the
+computational cost, once trained: §17 shows full-scale inference at
+~0.00014 s/scenario against ~0.093 s/scenario for a fresh mechanistic
+search, a ~660x per-evaluation speed-up that only pays for itself once a
+trained model is reused across enough new scenarios to recoup its own
+training cost (§17's break-even analysis). That trade-off is only worth
+making if the trained model's answers stay close to the mechanistic curve
+it is approximating -- Figures 32-33 (§16.2) and the accuracy tables below
+test exactly that, directly, before any speed argument is allowed to matter.
+The neural network is evaluated here alongside three simpler baselines
+(Naive, Ridge, Random Forest, §11) precisely so that any claimed advantage
+for the extra architectural complexity has to be demonstrated against
+cheaper alternatives, not assumed.
+
 Framework: Keras/TensorFlow (pinned per refinement addendum §1.2), TensorFlow
 2.21, CPU-only (no GPU in this environment).
 
@@ -423,6 +442,15 @@ with the minimum-LCOE point sitting at a renewable share (80.2%) well below
 
 ![Renewable share vs. system LCOE, reproducing the OptiCE course lecture chart shape](../outputs/figures/28_renewable_share_vs_lcoe.png)
 *Figure 28 — Renewable share vs. system LCOE. The minimum-LCOE "tipping point" sits at 80.2% renewable share.*
+
+Figures 27 and 28 are mechanistic-only: at this point in the report, no AI
+model has been introduced yet, and both curves exist to establish the
+ground-truth answer everything downstream is checked against. Section 16.2
+reproduces both of these exact chart types a second time, with the neural
+network's own predicted point marked directly on each curve (Figures 32 and
+33), for a scenario the model was actually trained and tested on -- the
+central question of this whole comparison, in chart form: does the AI's
+answer fall close to the true mechanistic curve, or far from it?
 
 This is the same underlying site physics documented under the pre-diesel
 design: annual PV+wind production (4,232,266 kWh) exceeds annual load
@@ -764,6 +792,20 @@ per-scenario table.
 ![System LCOE vs. battery capacity for one representative test scenario, mechanistic curve with the mechanistic optimum and neural network prediction both marked](../outputs/figures/32_system_lcoe_curve_with_nn_prediction_full.png)
 *Figure 32 (full-scale, scenario 175) — System LCOE vs. battery capacity, mechanistic sweep with the mechanistic optimum (green star) and neural network prediction (red star) marked. The two stars sit almost on top of each other at the curve's minimum.*
 
+Figure 33 does the same for Figure 28's chart type -- renewable share vs.
+system LCOE -- using the same scenario 175 sweep and the same two marked
+points. The mechanistic optimum sits at 94.07% renewable share; the neural
+network's point sits at 94.87%, both right at the curve's "elbow" where
+renewable share stops climbing steeply and system LCOE stops falling.
+Together, Figures 32 and 33 are the direct answer to the question Figures
+27/28 raise but cannot answer alone (they only ever show the mechanistic
+method): does the neural network's answer fall close to the true curve, or
+far from it? For this representative scenario, and for the full test set
+more broadly (§17.2's R^2 = 0.993, Figures 30-31), it falls close.
+
+![Renewable share vs. system LCOE for one representative test scenario, mechanistic curve with the mechanistic optimum and neural network prediction both marked](../outputs/figures/33_renewable_share_vs_lcoe_with_nn_prediction_full.png)
+*Figure 33 (full-scale, scenario 175) — Renewable share vs. system LCOE, mechanistic sweep with the mechanistic optimum (green star) and neural network prediction (red star) marked. The two stars sit almost on top of each other at the curve's elbow.*
+
 Full per-scenario tables: `outputs/tables/physical_verification_{model}_full.csv`.
 Summary: `outputs/tables/physical_verification_summary_by_model_full.csv`.
 
@@ -865,6 +907,20 @@ numba dispatch speedup (§9) makes mechanistic search itself very cheap per
 scenario (~0.093-0.291 s), which narrows AI's *absolute* time advantage at
 scale without changing the *relative* break-even ratio (dataset size needed
 before AI pays off).
+
+Put together with §16.2's Figures 32-33, this section closes the case §12
+opened: the full-scale neural network's advantage over the mechanistic
+model was never going to be accuracy (it cannot beat the ground truth it
+was trained to imitate), and Figures 32-33 confirm its answers do land
+close to the true curve rather than far from it (a few hundred kWh and a
+fraction of a percentage point of renewable share, for the representative
+scenario shown). Given that closeness holds up across the full test set
+too (R^2 = 0.993, MAE = 98.6 kWh, mean extra system LCOE = 0.0003 EUR/kWh,
+§17.2), the ~660x per-evaluation speed-up above is a real, usable advantage
+rather than a speed/accuracy trade-off -- conditional on the model being
+reused enough times (~5,200 evaluations) to earn back its own training
+cost, and never used as a substitute for a final mechanistic check on
+whatever scenario is actually shortlisted for investment (§16).
 
 ## 18. Discussion
 
@@ -1029,7 +1085,7 @@ economic penalty shrinks even as the summed total grows with test-set size.
   choice.
 - The `industrial_baseline` shape is used only by Stage 3's single fixed
   baseline scenario, not by the sampled scenario dataset. Found while
-  building Figure 32 (above): `src.scenarios.sampling`,
+  building Figures 32-33 (above): `src.scenarios.sampling`,
   `src.scenarios.scenario_runner`, and `src.ai.features.build_feature_matrix`
   all call `generate_load_profile` without a `profile_family` argument, so
   every one of the pilot's 100 and the full run's 5,000 sampled scenarios --
@@ -1049,8 +1105,8 @@ economic penalty shrinks even as the summed total grows with test-set size.
   internally consistent, since training and test scenarios share the same
   residential-shaped generation pipeline throughout), but it does mean
   Stage 3's single baseline scenario (§14) is not actually representative of
-  what the neural network was trained on, which is why Figure 32 uses a
-  test-split scenario instead of Figure 27's own baseline case. Fixing this
+  what the neural network was trained on, which is why Figures 32-33 use a
+  test-split scenario instead of Figure 27/28's own baseline case. Fixing this
   (threading `industrial_baseline` through scenario sampling and
   regenerating the full 5,000-scenario dataset and every downstream model)
   was out of scope for this finding's discovery and has not been done.

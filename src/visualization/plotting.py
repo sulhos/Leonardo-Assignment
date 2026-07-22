@@ -561,6 +561,44 @@ def plot_system_lcoe_curve_with_ai_prediction(
     return fig
 
 
+def plot_renewable_share_vs_lcoe_with_ai_prediction(
+    candidates: pd.DataFrame,
+    reference_lcoe_eur_per_kwh: float,
+    reference_renewable_share: float,
+    predicted_lcoe_eur_per_kwh: float,
+    predicted_renewable_share: float,
+    model_name: str,
+) -> plt.Figure:
+    """Same Renewable Share vs. System LCOE curve as figure 28
+    (`plot_renewable_share_vs_lcoe`), for one specific scenario's full
+    exhaustive candidate sweep, with the mechanistic optimum and the AI
+    model's predicted point both marked directly on it -- the
+    renewable-share counterpart to
+    `plot_system_lcoe_curve_with_ai_prediction`, which does the same for
+    the battery-capacity curve (figure 27)."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sorted_candidates = candidates.sort_values("nominal_battery_capacity_kwh")
+    ax.plot(
+        sorted_candidates["system_lcoe_eur_per_kwh"], sorted_candidates["renewable_share"] * 100,
+        marker="o", markersize=4, color="steelblue", linewidth=1.2, label="Mechanistic (all candidates)",
+    )
+    ax.scatter(
+        [reference_lcoe_eur_per_kwh], [reference_renewable_share * 100],
+        color="seagreen", marker="*", s=220, zorder=5, label="Mechanistic optimum",
+    )
+    ax.scatter(
+        [predicted_lcoe_eur_per_kwh], [predicted_renewable_share * 100],
+        color="firebrick", marker="*", s=220, zorder=5, label=f"{model_name} prediction",
+    )
+    ax.set_xlabel("System LCOE (EUR/kWh)")
+    ax.set_ylabel("Renewable share (%)")
+    ax.set_ylim(-2, 105)
+    ax.set_title(f"Renewable Share vs. System LCOE: Mechanistic vs. {model_name}")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+
 def plot_capacity_comparison_line(verification: pd.DataFrame, model_name: str) -> plt.Figure:
     """Line comparison of mechanistic-reference vs. AI-predicted battery
     capacity, one point per test scenario, sorted by the mechanistic
