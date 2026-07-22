@@ -1,6 +1,6 @@
 # Comparison of Neural-Network and Mechanistic Models for Battery Sizing in a Diesel-Backed PV–Wind Energy System
 
-**Status:** Sections 9-20 (Scenario-Dataset Generation through Conclusions) contain
+Status: Sections 9-20 (Scenario-Dataset Generation through Conclusions) contain
 real results from the diesel-backed, system-LCOE-optimized build (PROJECT_BRIEF.md
 Addendum 3), which supersedes the industrial-scale, hard-reliability-constrained
 build (Addendum 2) reported in earlier drafts of this document -- every number in
@@ -24,7 +24,7 @@ the report.*
 *Added per refinement addendum §1.3 — this section is expected by the thesis rubric
 and was missing from the original spec's outline.*
 
-**LPSP-based sizing methods for standalone PV/wind/battery systems.** The
+LPSP-based sizing methods for standalone PV/wind/battery systems. The
 loss-of-power-supply-probability (LPSP) reliability metric used throughout this
 project (§8, §12) follows the same formulation as Yang, Lu & Zhou's foundational
 hybrid solar-wind sizing model, which iterates over candidate PV/wind/battery
@@ -37,12 +37,12 @@ LPSP-driven search pattern, restricted to a single decision variable (battery
 capacity, given fixed PV/wind) rather than jointly searching PV, wind, and
 battery capacity together.
 
-**Techno-economic optimization tools.** HOMER (Lambert, T., Gilman, P., &
+Techno-economic optimization tools. HOMER (Lambert, T., Gilman, P., &
 Lilienthal, P. (2006). *Micropower system modeling with HOMER.* In F. A.
 Farret & M. G. Simões (Eds.), Integration of Alternative Sources of Energy
 (pp. 379–418). John Wiley & Sons) is the best-known example of this class of
 tool: given candidate system sizes, it simulates dispatch over a representative
-year and ranks designs by life-cycle cost. **OptiCE** (Campana, P. E., Zhang,
+year and ranks designs by life-cycle cost. OptiCE (Campana, P. E., Zhang,
 Y., & Yan, J., https://optice.net/) — the MATLAB techno-economic optimization
 tool developed by this project's course instructor and collaborators, made
 available as example course material alongside a lecture on LLM-assisted
@@ -70,7 +70,7 @@ fixed-PV/wind, battery-only search — a deliberate scope choice explained in
 scenario dataset (§9) as inputs for the ML models to condition on, rather than
 being optimized to a single value.
 
-**Prior machine-learning-for-sizing literature.** Most existing ML work on
+Prior machine-learning-for-sizing literature. Most existing ML work on
 hybrid PV/wind/battery systems targets short-term *forecasting* (solar
 irradiance, wind speed, or load) as an input to an otherwise conventional
 sizing or dispatch procedure, rather than replacing the sizing procedure
@@ -136,25 +136,25 @@ and its validation (§11).*
 
 ## 8. Mechanistic Battery Optimization
 
-**Diesel-backed hybrid system, min-LCOE objective (PROJECT_BRIEF.md Addendum 3).**
+Diesel-backed hybrid system, min-LCOE objective (PROJECT_BRIEF.md Addendum 3).
 The original design (PV+wind+battery, no backup generator) treated reliability as a
 hard constraint: a candidate battery capacity either met a target loss-of-power-
 supply-probability (LPSP) within the search range, or the scenario was excluded from
 the ML training population entirely as infeasible. This excluded roughly 58-61% of
 sampled scenarios at industrial scale (Addendum 2). A diesel generator, added to the
-system boundary and sized on **power** rather than energy
+system boundary and sized on power rather than energy
 (`diesel_rated_power_kw = 1.25 * peak_load_kw`, matching the OptiCE course lecture
 material's own `Diesel_rated_power` convention exactly, §2), removes that hard
 constraint: because the diesel's rated power always exceeds every individual hour's
 load, it alone can serve 100% of demand at any battery capacity. This reframes the
 question from a reliability-constrained feasibility search into a direct economic
-optimization: **given diesel always available as backstop, which battery capacity
-minimizes total system LCOE?** -- a closer match to the project's own stated
+optimization: given diesel always available as backstop, which battery capacity
+minimizes total system LCOE? -- a closer match to the project's own stated
 objective ("optimize the battery capacity suitable for the system design,
 economically feasible") and to OptiCE's own dual-objective framing (minimize LCOE /
 maximize renewable share).
 
-**Diesel model.** HOMER's standard linear fuel curve,
+Diesel model. HOMER's standard linear fuel curve,
 `F(P) = F0 * P_rated + F1 * P_output` (F0=0.08145, F1=0.246 L/hr per kW, widely-cited
 defaults; `src/physics/diesel.py`), applied as a pure post-processing step on top of
 the unmodified battery dispatch simulation (`apply_diesel_backup`) -- any residual
@@ -166,7 +166,7 @@ also gained cost models for the first time (~700 EUR/kWp and ~1,200 EUR/kW
 respectively, 2024 utility-scale benchmarks) -- previously absent, since only battery
 capacity was ever being costed.
 
-**Search method.** Exhaustive sweep over the configured candidate battery-module
+Search method. Exhaustive sweep over the configured candidate battery-module
 range (0-80 modules), computing system LCOE -- `(PV + wind + battery + diesel
 capital/O&M costs + diesel fuel cost) / energy served` -- for every candidate via
 `src/physics/optimization.py::run_battery_search`, then selecting the LCOE-minimizing
@@ -174,7 +174,7 @@ candidate (`candidates.loc[candidates["system_lcoe_eur_per_kwh"].idxmin()]`) rat
 than the smallest candidate meeting a hard LPSP target. LPSP and renewable share
 remain reported metrics for every candidate, not the search objective.
 
-**Feasibility is near-universal by mathematical construction.** Because diesel's
+Feasibility is near-universal by mathematical construction. Because diesel's
 rated power always exceeds every hour's load (given the default sizing factor
 &ge;1.0), "infeasible" is only reachable again with a deliberately undersized diesel
 (`sizing_factor < 1.0`), which does not occur under the documented default and is
@@ -184,9 +184,9 @@ specifically to confirm the guard is not dead code.
 
 ## 9. Scenario-Dataset Generation
 
-**This project pivoted from a residential to an industrial deployment context
+This project pivoted from a residential to an industrial deployment context
 partway through (PROJECT_BRIEF.md Addendum 2), after the residential-scale
-build was already complete, tested, and reported.** The pivot's reasoning:
+build was already complete, tested, and reported. The pivot's reasoning:
 wind generation is a difficult economic case to justify for a single
 residential site (small load, small rooftop-scale system); an industrial
 facility makes the PV+wind+battery combination a more defensible investment
@@ -221,7 +221,7 @@ The sampled input distributions (PV/wind capacity, load, reliability target,
 efficiency, SOC window) are shown in Figure 12, and the correlation between
 those raw inputs -- checked for unintended sampling coupling -- in Figure 15.
 
-**Feasibility: 100/100 scenarios (100%) feasible (Figure 14)**, per Addendum
+Feasibility: 100/100 scenarios (100%) feasible (Figure 14), per Addendum
 3's diesel-backed reframing (§8) -- diesel guarantees reliability by
 mathematical construction, so the near-total exclusion the pre-diesel
 hard-LPSP-constraint search produced (39% pilot feasible under Addendum 2, see
@@ -255,13 +255,13 @@ Full results: `outputs/tables/scenario_inputs_and_labels.csv` /
 ![Correlation matrix heatmap between the raw sampled scenario inputs](../outputs/figures/15_correlation_matrix.png)
 *Figure 15 — Correlation between raw scenario inputs, checked for unintended sampling coupling.*
 
-**Stage 8: full 5,000-scenario dataset.** Generated directly at full scale
+Stage 8: full 5,000-scenario dataset. Generated directly at full scale
 using the identical sampling ranges, consistency check, and 0-80 module
-search range as the pilot. Final result: **5,000/5,000 scenarios (100%)
-feasible**, matching the pilot's near-universal feasibility exactly, for the
+search range as the pilot. Final result: 5,000/5,000 scenarios (100%)
+feasible, matching the pilot's near-universal feasibility exactly, for the
 same diesel-backed structural reason. Generation used the
 `ProcessPoolExecutor`-based parallel implementation of `build_dataset()`
-(4 workers). Total generation time: **465.8s (7.8 minutes)** across 5,000
+(4 workers). Total generation time: 465.8s (7.8 minutes) across 5,000
 scenarios with 4-way parallelism.
 
 Full results: `data/scenarios/full_scenarios.csv`, `data/scenarios/full_metadata.json`.
@@ -288,18 +288,18 @@ covered).
 
 ## 11. Machine-Learning Baseline Models
 
-Three baselines trained on the pilot dataset (**100/100 feasible**, per
+Three baselines trained on the pilot dataset (100/100 feasible, per
 Addendum 3's diesel-backed reframing -- the `feasible` filter is kept for
 interface consistency and as a safeguard against the rare genuinely-
 infeasible case (an undersized diesel, not used in this project's default
 config), not because it meaningfully shrinks the training population
 anymore):
 
-- **Naive**: `DummyRegressor(strategy="median")` -- predicts the training-set
+- Naive: `DummyRegressor(strategy="median")` -- predicts the training-set
   median capacity regardless of features.
-- **Ridge regression**: alpha selected from `[0.01, 0.1, 1.0, 10.0]` by validation
+- Ridge regression: alpha selected from `[0.01, 0.1, 1.0, 10.0]` by validation
   MAE, then refit on the training split only.
-- **Random Forest**: `n_estimators` in `[100, 300]`, `max_depth` in `[3, 5, None]`,
+- Random Forest: `n_estimators` in `[100, 300]`, `max_depth` in `[3, 5, None]`,
   selected the same way. (Config originally specified `gradient_boosting`;
   finalized to `random_forest` in Stage 5 because `max_depth: null`, i.e.
   unlimited depth, is natively meaningful for Random Forest but not supported by
@@ -311,7 +311,7 @@ Results in §15.
 
 ## 12. Neural-Network Architecture and Training
 
-Framework: **Keras/TensorFlow** (pinned per refinement addendum §1.2), TensorFlow
+Framework: Keras/TensorFlow (pinned per refinement addendum §1.2), TensorFlow
 2.21, CPU-only (no GPU in this environment).
 
 Architecture, exactly as specified in `config/ml_training.yaml` (no changes made
@@ -327,10 +327,10 @@ checkpointing. Trained on the identical 70/14/16 Experiment A split and 37 featu
 as the Stage 5 baselines, with inputs standardized by a scaler fit on the training
 split only.
 
-**Actual run:** converged in 62 epochs (6.9s on CPU), best validation loss
+Actual run: converged in 62 epochs (6.9s on CPU), best validation loss
 1586.6. This run's loss curve (Figure 16) shows a standard early-stopping
-pattern, but the underlying problem shows up downstream anyway: **70 training
-rows is not enough data for a 15,233-parameter network to learn reliably**,
+pattern, but the underlying problem shows up downstream anyway: 70 training
+rows is not enough data for a 15,233-parameter network to learn reliably,
 which becomes explicit below (test-set R² -2.22, worse than every other model
 including the naive baseline). This is reported as the honest, unmodified
 result of the pilot's actual (small) sample size -- not adjusted, retried with
@@ -350,7 +350,7 @@ environment convenience only), `models/preprocessing/scaler.pkl`,
 
 ## 13. Evaluation Methods
 
-**Splitting strategy:** Experiment A (grouped 70/15/15 train/val/test split,
+Splitting strategy: Experiment A (grouped 70/15/15 train/val/test split,
 `GroupShuffleSplit` on `scenario_id`) was used throughout, for both the pilot
 and the full 5,000-scenario dataset. Since scenarios are sampled i.i.d. and
 `scenario_id` is unique per scenario, grouping by scenario is mathematically
@@ -360,21 +360,21 @@ leak across train/val/test, which would matter if scenario families were ever
 introduced. Experiments B (unseen weather year) and C (Västerås geographic
 transfer) are stretch goals and were not attempted (§19).
 
-**Accuracy metrics** (`src/ai/evaluation.py::compute_accuracy_metrics`): MAE,
+Accuracy metrics (`src/ai/evaluation.py::compute_accuracy_metrics`): MAE,
 RMSE, R², median absolute error, MAPE, max absolute error, signed bias, and
 percentage of predictions within 5/10/20% of the reference value.
 
-**Operational metrics** (`compute_operational_metrics`), reported *separately*
+Operational metrics (`compute_operational_metrics`), reported *separately*
 from accuracy metrics per the refinement addendum's requirement that
 underprediction be treated as a distinct reliability risk rather than averaged
 away: underprediction rate and mean/max underprediction magnitude,
 overprediction rate and mean/max overprediction magnitude, exact-match rate.
 
-**Physical verification metrics** (§16, reframed by Addendum 3): for every
+Physical verification metrics (§16, reframed by Addendum 3): for every
 prediction, diesel backup is applied and system LCOE is computed for both the
 AI-predicted battery capacity and the true LCOE-minimizing capacity, freshly
 re-run rather than diffed against stored summary statistics. The headline
-metric is **extra system LCOE** -- how much more expensive the AI's predicted
+metric is extra system LCOE -- how much more expensive the AI's predicted
 capacity makes the system, per kWh served, than installing the true optimum
 would have -- a continuous economic measure that remains meaningful even
 though reliability pass rate is now near-universally true by diesel's
@@ -393,7 +393,7 @@ cap), synthetic industrial load (3,800,000 kWh/year, 800 kW peak,
 `industrial_baseline` profile family), diesel rated at 1.25x peak load
 (1,000 kW).
 
-**Result: system-LCOE-optimal at 19 modules (4,750 kWh).** System LCOE =
+Result: system-LCOE-optimal at 19 modules (4,750 kWh). System LCOE =
 0.2390 EUR/kWh, renewable share = 80.2%, LPSP after diesel = 0.000000 (fully
 reliable). An extended diagnostic search over 0-200 modules (not the baseline
 result) found the identical optimum at 19 modules, confirming the configured
@@ -427,8 +427,8 @@ with the minimum-LCOE point sitting at a renewable share (80.2%) well below
 This is the same underlying site physics documented under the pre-diesel
 design: annual PV+wind production (4,232,266 kWh) exceeds annual load
 (3,800,000 kWh) by 11.4%, but the monthly renewable-to-load ratio falls below
-1.0 for five consecutive months, June through October -- a **seasonal
-generation/load mismatch** that a battery sized for daily/weekly cycling
+1.0 for five consecutive months, June through October -- a seasonal
+generation/load mismatch that a battery sized for daily/weekly cycling
 cannot bridge alone. Under the pre-diesel hard-LPSP-constraint search, this
 made the baseline case infeasible within the configured range -- the LPSP
 curve from that pre-diesel view is kept as a diagnostic in Figure 7, and
@@ -476,7 +476,7 @@ Random Forest from Stage 5, MLP from Stage 6):
 | Naive (median) | 1,328.1 | 1,481.7 | -0.042 | 296.9 | 25.0% |
 | Ridge | 233.6 | 324.0 | 0.950 | 82.7 | 100.0% |
 | Random Forest | 227.3 | 312.1 | 0.954 | -36.8 | 93.75% |
-| **Neural Network (MLP)** | **2,021.2** | **2,602.9** | **-2.215** | **-1,824.8** | **31.25%** |
+| Neural Network (MLP) | 2,021.2 | 2,602.9 | -2.215 | -1,824.8 | 31.25% |
 
 Operational (under/over-prediction, reported separately from averaged accuracy
 per §21):
@@ -488,8 +488,8 @@ per §21):
 | Random Forest | 50.0% | 264.1 | 50.0% | 190.5 |
 | Neural Network | 75.0% | 2,564.0 | 25.0% | 393.0 |
 
-**Read honestly, not triumphantly -- and this pilot's honest result is
-unflattering to the neural network.** The neural network has the **worst**
+Read honestly, not triumphantly -- and this pilot's honest result is
+unflattering to the neural network. The neural network has the worst
 accuracy on every metric (Figure 21), including a negative R² worse than the
 naive baseline's. §12 already showed why: 70 training rows is not enough data
 for a 15,233-parameter network at this problem's noise level -- a textbook
@@ -561,7 +561,7 @@ and clipped to zero before conversion to installable modules (PROJECT_BRIEF.md
 | Naive (median) | 1,338.9 | 1,726.2 | -0.054 | -390.1 | 31.7% |
 | Ridge | 237.7 | 338.3 | 0.960 | -4.7 | 93.5% |
 | Random Forest | 118.7 | 189.5 | 0.987 | -2.1 | 98.3% |
-| **Neural Network (MLP)** | **98.6** | **138.6** | **0.993** | **-8.8** | **99.2%** |
+| Neural Network (MLP) | 98.6 | 138.6 | 0.993 | -8.8 | 99.2% |
 
 Operational metrics (751 test scenarios):
 
@@ -572,8 +572,8 @@ Operational metrics (751 test scenarios):
 | Random Forest | 49.0% | 123.2 | 49.4% | 118.1 |
 | Neural Network | 51.1% | 105.1 | 48.9% | 91.9 |
 
-At 751 test scenarios (vs. the pilot's 16), the accuracy ranking **completely
-reverses relative to the pilot**: naive < Ridge < Random Forest < neural
+At 751 test scenarios (vs. the pilot's 16), the accuracy ranking completely
+reverses relative to the pilot: naive < Ridge < Random Forest < neural
 network, with the neural network now clearly *best* (R² 0.993, MAE less than
 Random Forest's) rather than clearly worst. The pilot's neural network result
 was not a subtle small-sample wobble around an otherwise-consistent ranking,
@@ -630,16 +630,16 @@ stored summary statistics (§8, §13).
 | Naive | 0.0217 | 100% | 37.5% | 62.5% | 362,363 |
 | Ridge | 0.0013 | 100% | 12.5% | 62.5% | 36,266 |
 | Random Forest | 0.0016 | 100% | 18.75% | 50.0% | 26,350 |
-| **Neural Network** | **0.0361** | **100%** | **68.75%** | **25.0%** | 53,143 |
+| Neural Network | 0.0361 | 100% | 68.75% | 25.0% | 53,143 |
 
-**This is the headline, mandatory-check result of the whole project at pilot
-scale -- and here it is unambiguous, not subtle.** Reliability pass rate is
+This is the headline, mandatory-check result of the whole project at pilot
+scale -- and here it is unambiguous, not subtle. Reliability pass rate is
 100% for every model (Figure 22), exactly as expected: diesel makes
 reliability near-universal by construction (§8), so it no longer
 discriminates between models the way it did under the pre-diesel design.
-**The metric that discriminates is mean extra system LCOE (Figure 29)**, and
+The metric that discriminates is mean extra system LCOE (Figure 29), and
 it tells the same story as §15.1's accuracy table: the neural network's
-predictions would make the system **0.0361 EUR/kWh** more expensive than the
+predictions would make the system 0.0361 EUR/kWh more expensive than the
 true optimum on average -- worse than even the naive median baseline (0.0217
 EUR/kWh) -- while Ridge (0.0013) and Random Forest (0.0016) cost almost
 nothing extra. This is a direct, continuous economic consequence of the
@@ -673,13 +673,13 @@ the mechanistic-optimal reference size.
 | Naive | 0.0145 | 100% | 47.5% | 46.5% | 6,785,771 |
 | Ridge | 0.0008 | 100% | 18.5% | 48.9% | 967,150 |
 | Random Forest | 0.0003 | 100% | 5.3% | 49.4% | 459,996 |
-| **Neural Network** | **0.0003** | **100%** | **3.3%** | **48.9%** | 431,251 |
+| Neural Network | 0.0003 | 100% | 3.3% | 48.9% | 431,251 |
 
-**This full-scale result (Figure 29, full-scale version) completely reverses
-the pilot's finding.** At 16 test scenarios (§16.1), the neural network's
+This full-scale result (Figure 29, full-scale version) completely reverses
+the pilot's finding. At 16 test scenarios (§16.1), the neural network's
 predictions were the *most* expensive of the four models to trust (0.0361
 EUR/kWh extra, worse than naive). At 751 test scenarios, the neural network
-is **statistically tied with Random Forest for cheapest to trust** (0.0003
+is statistically tied with Random Forest for cheapest to trust (0.0003
 EUR/kWh extra for both -- both essentially free relative to the true
 optimum), while naive costs a real 0.0145 EUR/kWh extra and Ridge sits in
 between (0.0008). Reliability pass rate stays at 100% for every model at
@@ -714,8 +714,8 @@ roughly evenly in direction), rather than oversizing disappearing outright.
 Full per-scenario tables: `outputs/tables/physical_verification_{model}_full.csv`.
 Summary: `outputs/tables/physical_verification_summary_by_model_full.csv`.
 
-**A real, small bug was found and fixed while preparing this full-scale
-rerun.** Physical verification originally sized diesel from each scenario's
+A real, small bug was found and fixed while preparing this full-scale
+rerun. Physical verification originally sized diesel from each scenario's
 *requested* peak load (`scenario["peak_load_kw"]`) rather than the
 regenerated load profile's *achieved* peak (`load.max()`), diverging from
 `run_battery_search`'s own convention (§8) by a tiny floating-point rescaling.
@@ -748,8 +748,8 @@ Mechanistic exhaustive search: ~0.291 s/scenario (81-candidate sweep, diesel
 backup applied, §8), pilot dataset generation (100 scenarios): ~0.7 s total --
 after the numba dispatch speedup (§9).
 
-**Break-even (PROJECT_BRIEF.md §22, denominator per refinement addendum §1.5 --
-the full exhaustive search per scenario, not a single dispatch run):**
+Break-even (PROJECT_BRIEF.md §22, denominator per refinement addendum §1.5 --
+the full exhaustive search per scenario, not a single dispatch run):
 
 | Model | Training time (s) | N_break_even (scenarios) |
 |---|---|---|
@@ -786,7 +786,7 @@ Mechanistic exhaustive search on the full dataset: ~0.093 s/scenario mean
 (5,000 scenarios; 465.8 s actual wall-clock time with the 4-worker parallel
 dataset generation, §9).
 
-**Break-even, full-scale training costs:**
+Break-even, full-scale training costs:
 
 | Model | Training time (s) | N_break_even (scenarios) |
 |---|---|---|
@@ -822,7 +822,7 @@ and full-scale results tell a two-act story, and the diesel-backed pivot
 (PROJECT_BRIEF.md Addendum 3) changes what the *second* act -- physical
 verification -- is actually able to say, compared to the pre-diesel design.
 
-**Act one (pilot, §15.1/§16.1):** at n=16, the neural network had the *worst*
+Act one (pilot, §15.1/§16.1): at n=16, the neural network had the *worst*
 accuracy of the four models (R² -2.22, worse than the naive median baseline)
 and, per Addendum 3's reframed verification, the *most expensive* predictions
 to trust (mean extra system LCOE 0.0361 EUR/kWh, worse than naive's 0.0217).
@@ -834,7 +834,7 @@ verification metric is what surfaces the same finding accuracy already
 showed: 70 training rows was not enough data for this 15,233-parameter
 architecture to learn a usable model, full stop.
 
-**Act two (full-scale, §15.2/§16.2):** at n=751, the neural network becomes
+Act two (full-scale, §15.2/§16.2): at n=751, the neural network becomes
 the *most* accurate model (R² 0.993) and statistically ties Random Forest for
 *cheapest to trust* (0.0003 EUR/kWh extra, both effectively free relative to
 the true optimum) -- a complete reversal from the pilot on both axes. This is
@@ -850,7 +850,7 @@ had Stage 8/9 not been attempted, the pilot's negative finding would have
 stood as the project's headline result, understating what this architecture
 can actually do once given enough data.
 
-**What the diesel pivot changes about this story, methodologically:** under
+What the diesel pivot changes about this story, methodologically: under
 the pre-diesel design, physical verification could catch a real
 accuracy/reliability *disconnect* -- a model that looked accurate but was
 secretly unreliable, or vice versa -- because reliability pass rate was an
@@ -888,12 +888,12 @@ economic penalty shrinks even as the summed total grows with test-set size.
 
 ## 19. Limitations
 
-- **Single location, single weather year.** Jinan 2023 only, at both pilot and
+- Single location, single weather year. Jinan 2023 only, at both pilot and
   full scale -- Experiment B (unseen weather year) and Experiment C (Västerås
   geographic transfer) are stretch goals not attempted (refinement addendum
   §1.1). No claim here generalizes to other climates or years.
-- **Sample-size sensitivity is now a demonstrated finding, not just a
-  caveat.** The extra-system-LCOE ranking reported in §16.1 (n=16) and §16.2
+- Sample-size sensitivity is now a demonstrated finding, not just a
+  caveat. The extra-system-LCOE ranking reported in §16.1 (n=16) and §16.2
   (n=751) reversed completely between pilot and full scale (§18): the neural
   network went from worst (0.0361 EUR/kWh extra, worse than naive) to
   statistically tied for best (0.0003 EUR/kWh, tied with Random Forest). The
@@ -901,7 +901,7 @@ economic penalty shrinks even as the summed total grows with test-set size.
   substantially reduces sampling uncertainty relative to the pilot, but every
   number in this report is still a point estimate from one split of one
   dataset, not a guarantee against further movement at even larger scale.
-- **The mechanistic model is the reference, not physical ground truth**
+- The mechanistic model is the reference, not physical ground truth
   (PROJECT_BRIEF.md §1). Reliability and system LCOE throughout this report
   mean agreement with the mechanistic dispatch simulation plus diesel model
   (§8) under their own modelling assumptions (generic turbine curve,
@@ -911,8 +911,8 @@ economic penalty shrinks even as the summed total grows with test-set size.
   project. This holds at both pilot and full scale: a larger sample makes the
   AI-vs-mechanistic *agreement* more statistically reliable, but does not
   change what that agreement is evidence of.
-- **Diesel sizing factor and fuel/cost parameters are fixed modelling
-  assumptions, not optimized or swept (PROJECT_BRIEF.md Addendum 3).** The
+- Diesel sizing factor and fuel/cost parameters are fixed modelling
+  assumptions, not optimized or swept (PROJECT_BRIEF.md Addendum 3). The
   diesel sizing factor (1.25x peak load, matching the OptiCE course lecture's
   own convention exactly, §2), fuel price (~0.90 EUR/L), and installed cost
   (~650 EUR/kW) are held constant across every scenario and every candidate
@@ -924,18 +924,18 @@ economic penalty shrinks even as the summed total grows with test-set size.
   perfectly available (no maintenance downtime, no efficiency degradation
   over its economic lifetime, no minimum-load or ramp-rate constraint beyond
   its rated power cap).
-- **Fixed battery search range (0-80 modules, 250 kWh each).** Kept at this
+- Fixed battery search range (0-80 modules, 250 kWh each). Kept at this
   value per the same reasoning applied throughout this project (a search
   range is a modelling decision made once, not re-litigated per scenario); an
   extended 0-200-module diagnostic search confirmed the baseline case's
   optimum sits well within this range (§14), but that check was not repeated
   for every one of the 5,000 sampled scenarios individually.
-- **Generic component models.** The wind turbine power curve and the PV
+- Generic component models. The wind turbine power curve and the PV
   NOCT/temperature-coefficient assumptions are documented modelling
   assumptions (`src/physics/wind_model.py`, `src/physics/pv_model.py`
   docstrings), not manufacturer-certified curves for a specific product.
-- **No wind-speed cooling term in the PV cell-temperature model, and no
-  battery thermal/temperature-dependent-capacity model.** Identified by direct
+- No wind-speed cooling term in the PV cell-temperature model, and no
+  battery thermal/temperature-dependent-capacity model. Identified by direct
   comparison against OptiCE (§2): OptiCE's PV temperature model includes a
   wind-speed-dependent cooling term, and OptiCE's battery model corrects
   usable capacity downward for battery temperatures below 25°C via a fitted
@@ -947,8 +947,8 @@ economic penalty shrinks even as the summed total grows with test-set size.
   results toward *underestimating* required battery capacity in climates with
   temperature extremes, since the mechanistic reference itself never derates
   capacity for temperature.
-- **PV and wind capacity are scenario inputs, not jointly optimized decision
-  variables.** OptiCE (§2) optimizes PV tilt/azimuth/capacity, wind tower
+- PV and wind capacity are scenario inputs, not jointly optimized decision
+  variables. OptiCE (§2) optimizes PV tilt/azimuth/capacity, wind tower
   height/capacity, and battery capacity jointly via a multi-objective genetic
   algorithm to find a single best design. This project instead samples PV and
   wind capacity across a range (§9) and only exhaustively searches battery
@@ -958,15 +958,15 @@ economic penalty shrinks even as the summed total grows with test-set size.
   cost-optimal system. A consequence is that this project makes no claim
   about whether any of its sampled PV/wind combinations are themselves
   economically optimal.
-- **One training run per model, at both scales.** No repeated-seed variance
+- One training run per model, at both scales. No repeated-seed variance
   analysis; the reported neural-network results are from single training runs,
   not averages over multiple seeds. This is a distinct source of uncertainty
   from the sample-size effect discussed above -- even the full-scale ranking
   could in principle shift under a different training seed, though the much
   larger test set makes this less likely to matter than it would at pilot
   scale.
-- **The industrial load-profile shape is a documented modelling assumption,
-  not derived from a real facility's metered data** (`src/physics/
+- The industrial load-profile shape is a documented modelling assumption,
+  not derived from a real facility's metered data (`src/physics/
   load_profile.py`'s `industrial_baseline` family, PROJECT_BRIEF.md Addendum
   2): two-shift operation, a 45% weekend reduction, and a weak seasonal
   swing. A continuous-process facility (steel, chemicals) or a strictly
@@ -974,8 +974,8 @@ economic penalty shrinks even as the summed total grows with test-set size.
   downstream number in this report -- from Stage 3's baseline feasibility
   finding through the full 5,000-scenario dataset -- is conditional on this
   specific shape choice.
-- **No cost-sensitivity analysis across battery, diesel, PV, or wind
-  price assumptions.** The full sensitivity sweep across cost assumptions
+- No cost-sensitivity analysis across battery, diesel, PV, or wind
+  price assumptions. The full sensitivity sweep across cost assumptions
   (PROJECT_BRIEF.md stretch goal) was not attempted for any of the four
   now-costed technologies (§8); all costs use the single fixed values in
   `config/jinan.yaml`, and every system-LCOE number in this report is
@@ -997,14 +997,14 @@ matching the course lecture's OptiCE dual-objective framing (§2, §8).
 Answering the five research questions (§1) directly, weighting the full-scale
 (Stage 8/9) result more heavily than the pilot's per §18, while keeping both:
 
-1. **Accuracy:** Yes, and dramatically more confidently than the pilot alone
+1. Accuracy: Yes, and dramatically more confidently than the pilot alone
    suggested -- in fact the pilot alone suggested the opposite. At full
    scale, the neural network most accurately reproduced mechanistic
    system-LCOE-optimal battery capacities (MAE 98.6 kWh, R² 0.993 vs. Random
    Forest's 118.7 kWh / 0.987), a result now backed by a 751-scenario test
    set rather than 16, where the same architecture had been the
    *worst*-performing model (R² -2.22).
-2. **Speed:** AI inference is several orders of magnitude faster per scenario
+2. Speed: AI inference is several orders of magnitude faster per scenario
    than the mechanistic search at both scales tested, though the numba
    dispatch speedup (§9) makes mechanistic search itself already fast
    (~0.09-0.29 s/scenario) without changing where the break-even point falls
@@ -1013,15 +1013,15 @@ Answering the five research questions (§1) directly, weighting the full-scale
    the size of the dataset it was trained on (~100-128 for the pilot-trained
    models, ~5,000-5,203 for the full-dataset-trained models) -- it is not a
    blanket efficiency win for one-off evaluations at either scale.
-3. **Reliability, and the economic cost of trusting the AI when verified:**
-   **Reliability itself is 100% for every model at both scales, by diesel's
+3. Reliability, and the economic cost of trusting the AI when verified:
+   Reliability itself is 100% for every model at both scales, by diesel's
    construction (§8) -- it is no longer the question that discriminates
-   between models the way it did under the pre-diesel design.** The question
+   between models the way it did under the pre-diesel design. The question
    this project's own goal actually asks -- how much extra it costs to trust
-   a given model's prediction -- **is decisively no (too expensive) at pilot
+   a given model's prediction -- is decisively no (too expensive) at pilot
    scale and decisively yes (statistically free) at full scale, and the gap
    between the two is the project's clearest finding at this deployment
-   scale.** The pilot's neural network failed both the accuracy test and the
+   scale. The pilot's neural network failed both the accuracy test and the
    mandatory physical-verification check (0.0361 EUR/kWh extra system LCOE,
    worse than even the naive baseline's 0.0217); at full scale, extra system
    LCOE tracked accuracy exactly (naive 0.0145 > Ridge 0.0008 > Random Forest
@@ -1033,11 +1033,11 @@ Answering the five research questions (§1) directly, weighting the full-scale
    models' predictions are not perfect (3.3-5.3% still undersize the
    battery) -- "cheap to trust" is a large improvement over the pilot, not a
    claim that every prediction is exactly correct.
-4. **Generalization to unseen conditions:** Not tested (single location/year
+4. Generalization to unseen conditions: Not tested (single location/year
    at both pilot and full scale; §19). This remains the most significant
    unaddressed research question, and applies identically across every
    deployment-context pivot this project has made.
-5. **Practical trade-offs:** Mechanistic search is slow but self-verifying by
+5. Practical trade-offs: Mechanistic search is slow but self-verifying by
    construction; AI is fast and, at sufficient training-set scale, accurate
    and economically trustworthy by the mechanistic model's own standard --
    but only once verified against it (Stage 7/9), and only for the single
@@ -1049,7 +1049,7 @@ Answering the five research questions (§1) directly, weighting the full-scale
    EUR/kWh terms rather than a binary pass/fail -- and by that measure, the
    best models' errors are economically small even though they are not zero.
 
-**On the research hypothesis:** more clearly supported at full scale than the
+On the research hypothesis: more clearly supported at full scale than the
 pilot alone suggested -- and the pilot alone would have actively pointed the
 wrong direction on both halves of the hypothesis. The "approximation with
 lower inference time" half is now well-supported (§15.2); the "mechanistic
@@ -1065,10 +1065,10 @@ NN that "wins" only because a bad small-sample result was quietly dropped
 would be a materially weaker piece of evidence than the same NN "winning"
 after that result was reported, explicitly retested, and explained. The
 larger methodological lesson this diesel pivot adds to the project's earlier
-findings: **when a project's own reframing removes the discriminating power
+findings: when a project's own reframing removes the discriminating power
 of its original mandatory-verification metric, the honest response is to
 find a new metric that still discriminates (extra system LCOE), not to keep
-reporting a metric that has become uninformative** -- reliability pass rate
+reporting a metric that has become uninformative -- reliability pass rate
 would have shown 100%/100%/100%/100% at both scales here and told the reader
 nothing about which model was actually better to trust, which is exactly the
 gap this report's physical-verification reframing (§16) was written to
