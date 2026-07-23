@@ -26,6 +26,7 @@ from src.physics.optimization import run_battery_search
 from src.physics.pv_model import compute_pv_generation
 from src.physics.wind_model import compute_wind_generation
 from src.visualization.plotting import (
+    plot_annual_profile,
     plot_diesel_engagement_week,
     plot_energy_flow_balance_with_diesel,
     plot_metric_vs_battery_capacity,
@@ -65,6 +66,12 @@ def run() -> dict:
         power_curve_speed_power_fraction=wind_cfg["power_curve_speed_power_fraction"],
     )
 
+    out_dir = REPO_ROOT / "outputs/figures"
+    save_figure(
+        plot_annual_profile(load, pv, wind, "Jinan Diesel-Hybrid Baseline: Annual Load, PV, Wind"),
+        out_dir / "01_annual_profile.png",
+    )
+
     result = run_battery_search(
         pv, wind, load, n_max=battery_cfg["candidate_module_counts"]["max"],
         module_capacity_kwh=battery_cfg["module_capacity_kwh"], module_rated_power_kw=battery_cfg["module_rated_power_kw"],
@@ -94,7 +101,6 @@ def run() -> dict:
     )
     dwd = apply_diesel_backup(dispatch, diesel)
 
-    out_dir = REPO_ROOT / "outputs/figures"
     save_figure(
         plot_diesel_engagement_week(
             dwd, DIESEL_WEEK_START, battery.min_soc_kwh, battery.max_soc_kwh,

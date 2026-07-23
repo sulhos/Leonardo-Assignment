@@ -87,6 +87,8 @@ peak ≈1,199 kW) — sized so renewable generation and load are close enough
 in magnitude for the diesel generator to meaningfully engage rather than
 sit idle (§8 shows the sensitivity of this choice).
 
+![Annual load, PV, and wind profile at the baseline case (Jinan, 2023)](../outputs/figures/01_annual_profile.png)
+
 ## 4. Weather and Load Data
 
 NASA POWER's hourly reanalysis product for Jinan, 2023 local calendar
