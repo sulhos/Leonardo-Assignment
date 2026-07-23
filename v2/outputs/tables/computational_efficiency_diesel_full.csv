@@ -1,0 +1,2 @@
+mechanistic_seconds_per_scenario,nn_single_seconds_per_scenario,nn_batched_seconds_per_scenario,n_test_scenarios,speedup_single,speedup_batched
+0.3477008336969998,0.058038741359982854,0.00010696282916111466,751,5.9908403516265105,3250.669755315365

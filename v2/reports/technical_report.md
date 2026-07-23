@@ -446,21 +446,32 @@ dataset and the diesel-trained model:
 
 - **Mechanistic optimization** (searching all 0–80 candidate battery
   sizes, each requiring a full 8,760-hour dispatch simulation followed by
-  diesel dispatch): **0.348 seconds per scenario on average** (5,000-
-  scenario dataset, median 0.338s, range 0.276–0.859s).
+  diesel dispatch): **348 milliseconds per scenario on average** (5,000-
+  scenario dataset, median 338 ms, range 276–859 ms).
 - **Neural-network inference, batched** (predicting all 751 test-split
   scenarios in one call — the realistic regime for evaluating many
-  candidate scenarios at once): **0.106 milliseconds per scenario**,
-  roughly **3,300× faster** than the mechanistic search, per scenario.
+  candidate scenarios at once): **0.107 milliseconds per scenario**,
+  roughly **3,250× faster** than the mechanistic search, per scenario.
 - **Neural-network inference, single scenario at a time** (one ad-hoc
   query, e.g. an interactive tool evaluating one design at a time):
-  **~57.6 milliseconds on average**, dominated by per-call framework
-  overhead rather than the arithmetic itself — still **~6.0× faster** than
+  **~58 milliseconds on average**, dominated by per-call framework
+  overhead rather than the arithmetic itself — still **~6× faster** than
   the mechanistic search, but nowhere near the batched figure.
+
+![Computational cost per scenario: mechanistic search vs. neural-network inference, single-call and batched (log scale)](../outputs/figures/28_computational_efficiency.png)
+
+This is also the direct, visual answer to the framing question raised
+earlier: since the neural network is trained to reproduce the mechanistic
+model's own output, it cannot be more *accurate* than its reference by
+construction (§9–§13 establish how close it gets, and how little that
+remaining gap costs economically) — so the comparison that actually
+differentiates the two methods, once accuracy is close, is computational
+cost, and the difference there spans more than three orders of magnitude
+between the mechanistic search and batched neural-network inference.
 
 The precise, honest claim is therefore the same shape as for a
 hard-reliability system: the neural network's efficiency advantage is real
-but regime-dependent — dramatic (~3,300×) when many scenarios are
+but regime-dependent — dramatic (~3,250×) when many scenarios are
 evaluated together, and much more modest (~6×) for one-off single
 predictions, because a large fraction of the single-call latency is fixed
 per-call overhead rather than genuine computation. This advantage excludes
@@ -508,7 +519,7 @@ For this diesel-hybrid system, the neural network reproduces mechanistic
 cost-minimizing battery-sizing decisions closely (R² = 0.994 ± 0.0004
 across ten independent splits) and does so at a large, precisely-quantified
 computational advantage over the full mechanistic search — dramatic
-(~3,300×) when evaluating many scenarios at once, more modest (~6×) for
+(~3,250×) when evaluating many scenarios at once, more modest (~6×) for
 one-off queries. Because reliability is guaranteed by the diesel
 generator's power sizing, the meaningful risk from trusting the AI's
 prediction is economic rather than a service failure: rounding its

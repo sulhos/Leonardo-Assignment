@@ -125,7 +125,7 @@ as-is.
 use it.** Running the full physics-based simulation takes about a third of
 a second per system. If you ask the AI to evaluate many systems at once
 (the realistic case for exploring lots of design options quickly), it's
-about **3,300 times faster** per system. If you ask it to evaluate just
+about **3,250 times faster** per system. If you ask it to evaluate just
 one system on its own, it's still faster — about **6 times** — but the
 speed advantage shrinks a lot, because most of that single request's time
 is just the overhead of asking the question at all, not the actual

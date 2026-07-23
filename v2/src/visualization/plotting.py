@@ -817,3 +817,38 @@ def plot_lean_on_diesel_diagnostic(verification: pd.DataFrame) -> plt.Figure:
     ax.legend(loc="upper left")
     fig.tight_layout()
     return fig
+
+
+def plot_computational_efficiency(
+    mechanistic_seconds_per_scenario: float,
+    nn_single_seconds_per_scenario: float,
+    nn_batched_seconds_per_scenario: float,
+) -> plt.Figure:
+    """Per-scenario compute time: the full mechanistic 0-80-module search vs.
+    neural-network inference, single-call and batched. Log scale, since the
+    three span several orders of magnitude; bars are directly labelled with
+    the measured time and the speedup relative to the mechanistic search,
+    since that relative comparison -- not the absolute values alone -- is
+    the point of the figure."""
+    labels = ["Mechanistic search\n(0-80 module sweep)", "NN inference\n(single scenario)", "NN inference\n(batched)"]
+    values = [mechanistic_seconds_per_scenario, nn_single_seconds_per_scenario, nn_batched_seconds_per_scenario]
+    colors = ["#4C72B0", "#DD8452", "#55A868"]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = ax.bar(labels, values, color=colors)
+    ax.set_yscale("log")
+    ax.set_ylabel("Seconds per scenario (log scale)")
+    ax.set_title("Computational Cost: Mechanistic Search vs. Neural-Network Inference")
+    ax.set_ylim(top=values[0] * 20)
+
+    baseline = values[0]
+    for bar, value in zip(bars, values):
+        speedup = baseline / value
+        speedup_label = "baseline" if value == baseline else f"{speedup:,.0f}x faster"
+        ax.annotate(
+            f"{value * 1000:,.3g} ms\n({speedup_label})",
+            xy=(bar.get_x() + bar.get_width() / 2, value),
+            xytext=(0, 8), textcoords="offset points", ha="center", va="bottom", fontsize=9,
+        )
+    fig.tight_layout()
+    return fig
