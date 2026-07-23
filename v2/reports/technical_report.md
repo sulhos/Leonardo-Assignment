@@ -118,6 +118,14 @@ the model.
 discretized manufacturer-style power curve (a documented generic cubic-ramp
 shape, not a certified manufacturer curve).
 
+![Hub-height wind-speed distribution at the baseline site and the modelled 1,450 kW turbine's power curve](../outputs/figures/06_wind_speed_power_curve.png)
+
+The site's hub-height wind speed is concentrated well below the turbine's
+11 m/s rated speed (median ≈4 m/s), so the turbine spends most operating
+hours on the steep, sub-rated part of the curve rather than at its 1,450 kW
+plateau — wind generation at this site is real but modest relative to
+nameplate capacity, with PV supplying the larger share of the renewable mix.
+
 **Battery**: the state-of-charge equation, including hourly self-discharge:
 
     Charging:    E[t] = min(E[t-1]·(1-SDR) + η_c·E_in,t − E_out,t/η_d, E_max)

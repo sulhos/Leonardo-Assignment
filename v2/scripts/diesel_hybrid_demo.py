@@ -24,13 +24,14 @@ from src.physics.dispatch import resolve_initial_soc_bias
 from src.physics.load_profile import generate_load_profile
 from src.physics.optimization import run_battery_search
 from src.physics.pv_model import compute_pv_generation
-from src.physics.wind_model import compute_wind_generation
+from src.physics.wind_model import adjust_wind_speed_to_hub_height, compute_wind_generation
 from src.visualization.plotting import (
     plot_annual_profile,
     plot_diesel_engagement_week,
     plot_energy_flow_balance_with_diesel,
     plot_metric_vs_battery_capacity,
     plot_renewable_share_vs_lcoe,
+    plot_wind_speed_distribution_and_power_curve,
     save_figure,
 )
 
@@ -70,6 +71,17 @@ def run() -> dict:
     save_figure(
         plot_annual_profile(load, pv, wind, "Jinan Diesel-Hybrid Baseline: Annual Load, PV, Wind"),
         out_dir / "01_annual_profile.png",
+    )
+
+    wind_speed_hub = adjust_wind_speed_to_hub_height(
+        weather["WS10M"], wind_cfg["weather_reference_height_m"], wind_cfg["hub_height_m"], wind_cfg["wind_shear_exponent"],
+    )
+    save_figure(
+        plot_wind_speed_distribution_and_power_curve(
+            wind_speed_hub, wind_cfg["rated_power_kw"], wind_cfg["power_curve_speed_power_fraction"],
+            wind_cfg["cut_in_mps"], wind_cfg["rated_mps"], wind_cfg["cut_out_mps"],
+        ),
+        out_dir / "06_wind_speed_power_curve.png",
     )
 
     result = run_battery_search(
